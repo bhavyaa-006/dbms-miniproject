@@ -1,6 +1,9 @@
+import traceback
+
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from typing import List, Optional
 from datetime import date
 from .. import models, schemas
@@ -58,47 +61,51 @@ def list_lost_items(
 @router.post("", response_model=schemas.LostItemOut, status_code=201)
 async def create_lost_item(
     request: Request,
-    title: str = Form(...),
-    description: Optional[str] = Form(None),
-    category: Optional[str] = Form(None),
-    category_id: Optional[str] = Form(None),
-    location: Optional[str] = Form(None),
-    date_lost: date = Form(...),
-    image: Optional[UploadFile] = File(None),
+    payload: schemas.LostItemCreate,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
     """Report a lost item (with optional image upload)."""
     try:
-        request_data = dict(await request.form())
+        request_data = await request.json()
         print("Incoming lost item payload:", request_data)
         logger.info("Incoming lost item payload: %s", request_data)
+        logger.info("Validated lost item payload: %s", payload.model_dump())
 
         image_url = None
-        if image and image.filename:
-            image_url = await save_upload_file(image)
-
-        resolved_category = _resolve_category_name(db, category, category_id, required=True)
+        logger.info("Attempting lost item database insert for user_id=%s", current_user.id)
 
         item = models.LostItem(
-            title=title,
-            description=description,
-            category=resolved_category,
+            title=payload.title,
+            description=payload.description,
+            category=_resolve_category_name(db, payload.category, None, required=True),
             user_id=current_user.id,
-            location=location,
-            date_lost=date_lost,
+            location=payload.location,
+            date_lost=payload.date_lost,
             image_url=image_url,
         )
         db.add(item)
         db.commit()
         db.refresh(item)
+        logger.info("Lost item inserted successfully id=%s user_id=%s", item.id, current_user.id)
         return item
-    except Exception as exc:
+    except SQLAlchemyError as exc:
         db.rollback()
-        logger.exception("Failed to create lost item title=%s user_id=%s", title, current_user.id)
+        print("Lost item creation error:", str(exc))
+        traceback.print_exc()
+        logger.exception("SQLAlchemy error creating lost item user_id=%s", current_user.id)
         return JSONResponse(
             status_code=500,
-            content={"success": False, "message": "Failed to report lost item"},
+            content={"success": False, "message": str(exc)},
+        )
+    except Exception as exc:
+        db.rollback()
+        print("Lost item creation error:", str(exc))
+        traceback.print_exc()
+        logger.exception("Unexpected error creating lost item user_id=%s", current_user.id)
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": str(exc)},
         )
 
 
