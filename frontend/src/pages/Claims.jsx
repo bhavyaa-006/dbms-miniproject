@@ -4,7 +4,7 @@ import { useToast } from '../context/ToastContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 import StatusBadge from '../components/StatusBadge'
 import PageState from '../components/PageState'
-import { CheckCircle, XCircle, MapPin, Calendar } from 'lucide-react'
+import { CheckCircle, XCircle, MapPin, Calendar, ClipboardList } from 'lucide-react'
 
 export default function Claims() {
   const { addToast } = useToast()

@@ -7,6 +7,20 @@ import { Bell, CheckCheck } from 'lucide-react'
 
 export default function Notifications() {
   const { addToast } = useToast()
+  const [notifs, setNotifs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const fetchNotifs = () => {
+    setLoading(true)
+    setError('')
+    getNotifications()
+      .then(res => setNotifs(res.data))
+      .catch(err => setError(err.response?.data?.detail || 'Failed to load notifications'))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { fetchNotifs() }, [])
 
   if (error) {
     return (
@@ -20,15 +34,6 @@ export default function Notifications() {
       />
     )
   }
-  const [notifs, setNotifs] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  const fetchNotifs = () => {
-    setLoading(true)
-    getNotifications().then(res => setNotifs(res.data)).finally(() => setLoading(false))
-  }
-
-  useEffect(() => { fetchNotifs() }, [])
 
   const handleMarkRead = async (id) => {
     try {

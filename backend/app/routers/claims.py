@@ -46,6 +46,12 @@ def submit_claim(
         description=payload.description,
     )
     db.add(claim)
+    
+    _create_notification(
+        db, found_item.user_id,
+        f"A new claim has been submitted for your found item: '{found_item.title}'"
+    )
+    
     db.commit()
     db.refresh(claim)
     return claim
@@ -54,10 +60,19 @@ def submit_claim(
 @router.get("", response_model=List[schemas.ClaimOut])
 def list_all_claims(
     db: Session = Depends(get_db),
-    _: models.User = Depends(admin_only),
+    current_user: models.User = Depends(get_current_user),
 ):
-    """Admin: list all claims."""
-    return db.query(models.Claim).order_by(models.Claim.created_at.desc()).all()
+    """Admin: list all claims. Student: list claims for items they found."""
+    if current_user.role == models.Role.ADMIN:
+        return db.query(models.Claim).order_by(models.Claim.created_at.desc()).all()
+    else:
+        return (
+            db.query(models.Claim)
+            .join(models.FoundItem)
+            .filter(models.FoundItem.user_id == current_user.id)
+            .order_by(models.Claim.created_at.desc())
+            .all()
+        )
 
 
 @router.get("/my", response_model=List[schemas.ClaimOut])
@@ -79,12 +94,15 @@ def update_claim_status(
     claim_id: str,
     payload: schemas.ClaimUpdate,
     db: Session = Depends(get_db),
-    _: models.User = Depends(admin_only),
+    current_user: models.User = Depends(get_current_user),
 ):
-    """Admin: approve or reject a claim. Trigger handles found_item status update."""
+    """Admin or Finder: approve or reject a claim. Trigger handles found_item status update."""
     claim = db.query(models.Claim).filter(models.Claim.id == claim_id).first()
     if not claim:
         raise HTTPException(status_code=404, detail="Claim not found")
+
+    if claim.found_item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized to manage this claim")
 
     old_status = claim.status
     claim.status = payload.status
