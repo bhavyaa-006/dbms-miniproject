@@ -1,15 +1,10 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from typing import List
-from .. import models, schemas
-from ..dependencies import get_db, get_current_user
+from fastapi import APIRouter
+from .. import schemas
+from ..category_constants import PREDEFINED_CATEGORIES
 
 router = APIRouter(prefix="/categories", tags=["Categories"])
 
 
-@router.get("", response_model=List[schemas.CategoryOut])
-def list_categories(
-    db: Session = Depends(get_db),
-    _: models.User = Depends(get_current_user),
-):
-    return db.query(models.Category).all()
+@router.get("", response_model=schemas.CategoriesResponse)
+def list_categories():
+    return {"categories": PREDEFINED_CATEGORIES}

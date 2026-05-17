@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import SessionLocal
 from app import models
+from app.category_constants import PREDEFINED_CATEGORIES
 from sqlalchemy import text
 
 def run():
@@ -13,14 +14,7 @@ def run():
         # Wipe all tables cleanly
         db.execute(text("TRUNCATE TABLE notifications, claims, found_items, lost_items, categories, users CASCADE"))
 
-        categories = [
-            models.Category(name="Electronics", description="Phones, laptops, chargers, earphones"),
-            models.Category(name="Documents", description="ID cards, admit cards, notebooks"),
-            models.Category(name="Clothing", description="Jackets, scarves, caps, bags"),
-            models.Category(name="Accessories", description="Watches, keys, wallets, spectacles"),
-            models.Category(name="Sports", description="Bats, balls, rackets, equipment"),
-            models.Category(name="Other", description="Anything that does not fit above"),
-        ]
+        categories = [models.Category(name=name, description=None) for name in PREDEFINED_CATEGORIES]
         db.add_all(categories)
 
         db.commit()

@@ -1,6 +1,6 @@
 import { Search } from 'lucide-react'
 
-export default function SearchFilter({ search, onSearch, categoryId, onCategory, status, onStatus, categories, statusOptions }) {
+export default function SearchFilter({ search, onSearch, category, onCategory, status, onStatus, categories, statusOptions }) {
   return (
     <div className="flex flex-wrap gap-3">
       {/* Search */}
@@ -20,13 +20,13 @@ export default function SearchFilter({ search, onSearch, categoryId, onCategory,
       {categories && (
         <select
           id="category-filter"
-          value={categoryId}
+          value={category}
           onChange={e => onCategory(e.target.value)}
           className="input py-2 text-sm w-auto min-w-36"
         >
           <option value="">All Categories</option>
-          {categories.map(c => (
-            <option key={c.id} value={c.id}>{c.name}</option>
+          {categories.map(categoryName => (
+            <option key={categoryName} value={categoryName}>{categoryName}</option>
           ))}
         </select>
       )}

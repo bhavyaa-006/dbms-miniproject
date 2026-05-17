@@ -12,9 +12,10 @@ export default function ReportLost() {
   const [loading, setLoading] = useState(false)
   const [categoryLoading, setCategoryLoading] = useState(true)
   const [categoryError, setCategoryError] = useState('')
+  const [categoryValidationError, setCategoryValidationError] = useState('')
   const categoryUnavailable = !categoryLoading && !categoryError && categories.length === 0
   const [form, setForm] = useState({
-    title: '', description: '', category_id: '', location: '', date_lost: ''
+    title: '', description: '', category: '', location: '', date_lost: ''
   })
   const [image, setImage] = useState(null)
   const [preview, setPreview] = useState(null)
@@ -48,10 +49,15 @@ export default function ReportLost() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!form.category) {
+      setCategoryValidationError('Please select a category')
+      return
+    }
     if (categoryLoading || categoryError || categoryUnavailable) {
       addToast('Categories are not available right now', 'error')
       return
     }
+    setCategoryValidationError('')
     setLoading(true)
     const fd = new FormData()
     Object.entries(form).forEach(([k, v]) => { if (v) fd.append(k, v) })
@@ -105,10 +111,11 @@ export default function ReportLost() {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="label">Category *</label>
-            <select name="category_id" required value={form.category_id} onChange={handleChange} className="input" disabled={categoryLoading || !!categoryError || categoryUnavailable}>
-              <option value="">{categoryLoading ? 'Loading categories...' : 'Select a category'}</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+              <select name="category" required value={form.category} onChange={(e) => { handleChange(e); setCategoryValidationError('') }} className="input" disabled={categoryLoading || !!categoryError || categoryUnavailable}>
+                <option value="">{categoryLoading ? 'Loading categories...' : 'Select Category'}</option>
+                {categories.map(categoryName => <option key={categoryName} value={categoryName}>{categoryName}</option>)}
+              </select>
+            {categoryValidationError && <p className="mt-1 text-xs text-red-300">{categoryValidationError}</p>}
           </div>
           <div>
             <label className="label">Date Lost *</label>

@@ -7,8 +7,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import Response
+from sqlalchemy import inspect, text
 
 from .database import engine, Base
+from .category_constants import DEFAULT_CATEGORY, PREDEFINED_CATEGORIES
 from . import models  # noqa: F401 - ensures models are registered with Base
 from .routers import auth, lost_items, found_items, claims, notifications, categories, dashboard
 
@@ -99,6 +101,33 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
         content={"detail": "Internal server error", "message": "Internal server error"},
     )
 
+
+def _ensure_category_column(connection, table_name: str):
+    inspector = inspect(connection)
+    columns = {column["name"] for column in inspector.get_columns(table_name)}
+    if "category_name" in columns:
+        return
+
+    connection.execute(text(f"ALTER TABLE {table_name} ADD COLUMN category_name VARCHAR(100)"))
+    default_sql = f"'{DEFAULT_CATEGORY}'"
+    connection.execute(
+        text(
+            f"UPDATE {table_name} SET category_name = COALESCE(category_name, :default_category)"
+        ),
+        {"default_category": DEFAULT_CATEGORY},
+    )
+    connection.execute(text(f"UPDATE {table_name} SET category_name = :default_category WHERE category_name IS NULL OR TRIM(category_name) = ''"), {"default_category": DEFAULT_CATEGORY})
+    allowed_sql = ", ".join(f"'{category}'" for category in PREDEFINED_CATEGORIES)
+    connection.execute(text(f"UPDATE {table_name} SET category_name = :default_category WHERE category_name NOT IN ({allowed_sql})"), {"default_category": DEFAULT_CATEGORY})
+    connection.execute(text(f"ALTER TABLE {table_name} ALTER COLUMN category_name SET DEFAULT {default_sql}"))
+    connection.execute(text(f"ALTER TABLE {table_name} ALTER COLUMN category_name SET NOT NULL"))
+
+
+def ensure_category_schema():
+    with engine.begin() as connection:
+        _ensure_category_column(connection, "lost_items")
+        _ensure_category_column(connection, "found_items")
+
 # ─── Static files (uploaded images) ──────────────────────────────────────────
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
@@ -118,6 +147,7 @@ def startup_event():
     try:
         logger.info("Creating database tables on startup")
         Base.metadata.create_all(bind=engine)
+        ensure_category_schema()
         os.makedirs("uploads", exist_ok=True)
     except Exception:
         logger.exception("Failed to initialize database tables")

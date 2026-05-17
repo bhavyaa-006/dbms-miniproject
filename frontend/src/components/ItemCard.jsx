@@ -54,7 +54,7 @@ export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwne
         </span>
         <span className="flex items-center gap-1.5">
           <Tag size={11} className="flex-shrink-0 text-zinc-600" />
-          {item.category?.name}
+          {item.category}
         </span>
         <span className="flex items-center gap-1.5">
           <User size={11} className="flex-shrink-0 text-zinc-600" />

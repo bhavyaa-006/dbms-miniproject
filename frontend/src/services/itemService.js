@@ -1,7 +1,10 @@
 import api from './api'
 
 // ── Categories ─────────────────────────────────────────────────────────────
-export const getCategories = () => api.get('/categories')
+export const getCategories = async () => {
+	const response = await api.get('/categories')
+	return { ...response, data: response.data?.categories || [] }
+}
 
 // ── Lost Items ─────────────────────────────────────────────────────────────
 export const getLostItems    = (params) => api.get('/lost-items', { params })

@@ -5,13 +5,34 @@ from datetime import date
 from .. import models, schemas
 from ..dependencies import get_db, get_current_user
 from ..utils.file_upload import save_upload_file, delete_upload_file
+from ..category_constants import normalize_category, PREDEFINED_CATEGORIES, validate_category_input
 
 router = APIRouter(prefix="/lost-items", tags=["Lost Items"])
+
+
+def _resolve_category_name(db: Session, category: Optional[str], category_id: Optional[str], required: bool = False) -> Optional[str]:
+    if category is not None:
+        if not category.strip():
+            raise HTTPException(status_code=422, detail="Category is required")
+        try:
+            return validate_category_input(category)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail="Invalid category") from exc
+
+    if category_id:
+        legacy_category = db.query(models.Category).filter(models.Category.id == category_id).first()
+        if legacy_category and legacy_category.name:
+            return normalize_category(legacy_category.name)
+
+    if required:
+        raise HTTPException(status_code=422, detail="Category is required")
+    return None
 
 
 @router.get("", response_model=List[schemas.LostItemOut])
 def list_lost_items(
     search: Optional[str] = None,
+    category: Optional[str] = None,
     category_id: Optional[str] = None,
     status: Optional[str] = None,
     db: Session = Depends(get_db),
@@ -21,8 +42,11 @@ def list_lost_items(
     q = db.query(models.LostItem)
     if search:
         q = q.filter(models.LostItem.title.ilike(f"%{search}%"))
-    if category_id:
-        q = q.filter(models.LostItem.category_id == category_id)
+    resolved_category = None
+    if category is not None or category_id is not None:
+        resolved_category = _resolve_category_name(db, category, category_id)
+    if resolved_category:
+        q = q.filter(models.LostItem.category_name == resolved_category)
     if status:
         q = q.filter(models.LostItem.status == status)
     return q.order_by(models.LostItem.created_at.desc()).all()
@@ -32,7 +56,8 @@ def list_lost_items(
 async def create_lost_item(
     title: str = Form(...),
     description: Optional[str] = Form(None),
-    category_id: str = Form(...),
+    category: Optional[str] = Form(None),
+    category_id: Optional[str] = Form(None),
     location: Optional[str] = Form(None),
     date_lost: date = Form(...),
     image: Optional[UploadFile] = File(None),
@@ -44,10 +69,12 @@ async def create_lost_item(
     if image and image.filename:
         image_url = await save_upload_file(image)
 
+    resolved_category = _resolve_category_name(db, category, category_id, required=True)
+
     item = models.LostItem(
         title=title,
         description=description,
-        category_id=category_id,
+        category=resolved_category,
         user_id=current_user.id,
         location=location,
         date_lost=date_lost,
@@ -90,6 +117,7 @@ async def update_lost_item(
     item_id: str,
     title: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
+    category: Optional[str] = Form(None),
     category_id: Optional[str] = Form(None),
     location: Optional[str] = Form(None),
     status: Optional[str] = Form(None),
@@ -108,8 +136,8 @@ async def update_lost_item(
         item.title = title
     if description is not None:
         item.description = description
-    if category_id:
-        item.category_id = category_id
+    if category is not None or category_id is not None:
+        item.category = _resolve_category_name(db, category, category_id, required=True)
     if location is not None:
         item.location = location
     if status:
