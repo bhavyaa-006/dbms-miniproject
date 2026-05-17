@@ -26,7 +26,7 @@ erDiagram
         string category_id FK
         string user_id FK
         string location
-        enum status "PENDING | RESOLVED"
+        enum status "LOST | FOUND | CLOSED"
         string image_url
         date date_lost
         datetime created_at

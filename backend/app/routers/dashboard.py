@@ -19,13 +19,13 @@ def get_stats(
             models.LostItem.status == models.LostItemStatus.LOST
         ).count()
         total_found = db.query(models.FoundItem).filter(
-            models.FoundItem.status.in_([models.FoundItemStatus.AVAILABLE, models.FoundItemStatus.CLAIM_PENDING])
+            models.FoundItem.status == models.FoundItemStatus.AVAILABLE
         ).count()
         pending_claims = db.query(models.Claim).filter(
             models.Claim.status == models.ClaimStatus.PENDING
         ).count()
         resolved_items = db.query(models.FoundItem).filter(
-            models.FoundItem.status.in_([models.FoundItemStatus.CLAIMED, models.FoundItemStatus.RETURNED])
+            models.FoundItem.status == models.FoundItemStatus.CLAIMED
         ).count()
 
         data = {

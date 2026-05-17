@@ -79,7 +79,7 @@ def _get_category_or_404(db: Session, category_id) -> models.Category:
 def list_lost_items(
     search: Optional[str] = None,
     category_id: Optional[str] = None,
-    status: Optional[str] = None,
+    status: Optional[schemas.LostItemStatus] = None,
     db: Session = Depends(get_db),
     _: models.User = Depends(get_current_user),
 ):

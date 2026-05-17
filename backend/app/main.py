@@ -12,10 +12,12 @@ from sqlalchemy import inspect, text
 
 from .database import engine, Base
 from .category_constants import DEFAULT_CATEGORY, PREDEFINED_CATEGORIES
+from .enum_repair import repair_database_enums_and_rows, repair_enum_rows, ENUM_LEGACY_ROW_VALUES
 from . import models  # noqa: F401 - ensures models are registered with Base
 from .routers import auth, lost_items, found_items, claims, notifications, categories, dashboard
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 # ─── Ensure uploads directory exists ─────────────────────────────────────────
 os.makedirs("uploads", exist_ok=True)
@@ -224,64 +226,14 @@ def _rename_pg_enum_value(connection, enum_type_name: str, old_value: str, new_v
     connection.execute(text(f"ALTER TYPE {enum_type_name} RENAME VALUE '{old_value}' TO '{new_value}'"))
 
 
-def _repair_pg_enum_type(connection, enum_type_name: str, mapping: dict[str, str]):
-    inspector = inspect(connection)
-    if enum_type_name not in {row[0] for row in connection.execute(text("SELECT typname FROM pg_type")).fetchall()}:
-        return
-
-    labels = _get_pg_enum_labels(connection, enum_type_name)
-    print(f"Enum {enum_type_name} labels before repair: {labels}")
-
-    for old_value, new_value in mapping.items():
-        if old_value == new_value:
-            continue
-        if old_value in labels and new_value not in labels:
-            _rename_pg_enum_value(connection, enum_type_name, old_value, new_value)
-            labels = _get_pg_enum_labels(connection, enum_type_name)
-            print(f"Renamed enum {enum_type_name} value {old_value} -> {new_value}")
-
-
-def _repair_postgres_enums(connection):
-    _repair_pg_enum_type(connection, "lostitemstatus", {
-        "lost": "LOST",
-        "found": "FOUND",
-        "closed": "CLOSED",
-    })
-    _repair_pg_enum_type(connection, "claimstatus", {
-        "pending": "PENDING",
-        "approved": "APPROVED",
-        "rejected": "REJECTED",
-    })
-    _repair_pg_enum_type(connection, "founditemstatus", {
-        "available": "AVAILABLE",
-        "claimed": "CLAIMED",
-        "returned": "RETURNED",
-        "claim_pending": "CLAIM_PENDING",
-    })
-
-
-def _repair_lost_item_statuses(connection):
-    inspector = inspect(connection)
-    if "lost_items" not in inspector.get_table_names():
-        return
-
-    connection.execute(
-        text(
-            "UPDATE lost_items SET status = 'LOST' "
-            "WHERE status IS NULL OR status NOT IN ('LOST', 'FOUND', 'CLOSED')"
-        )
-    )
-
-
-def ensure_database_schema():
-    with engine.begin() as connection:
-        _repair_postgres_enums(connection)
-        _seed_default_categories(connection)
-        _ensure_item_schema(connection)
-        _repair_lost_item_statuses(connection)
-        _ensure_category_foreign_key(connection, "lost_items")
-        _ensure_category_foreign_key(connection, "found_items")
-        _ensure_notification_schema(connection)
+def ensure_database_schema(connection):
+    _seed_default_categories(connection)
+    _ensure_item_schema(connection)
+    repair_enum_rows(connection, "lost_items", "status", ENUM_LEGACY_ROW_VALUES["lost_items"])
+    repair_enum_rows(connection, "found_items", "status", ENUM_LEGACY_ROW_VALUES["found_items"])
+    _ensure_category_foreign_key(connection, "lost_items")
+    _ensure_category_foreign_key(connection, "found_items")
+    _ensure_notification_schema(connection)
 
 # ─── Static files (uploaded images) ──────────────────────────────────────────
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -300,9 +252,11 @@ app.include_router(dashboard.router, prefix=API_PREFIX)
 @app.on_event("startup")
 def startup_event():
     try:
-        logger.info("Creating database tables on startup")
-        Base.metadata.create_all(bind=engine)
-        ensure_database_schema()
+        logger.info("Repairing database enums and creating tables on startup")
+        with engine.begin() as connection:
+            repair_database_enums_and_rows(connection)
+            Base.metadata.create_all(bind=connection)
+            ensure_database_schema(connection)
         os.makedirs("uploads", exist_ok=True)
     except Exception:
         logger.exception("Failed to initialize database tables")

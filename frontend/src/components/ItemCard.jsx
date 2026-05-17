@@ -10,7 +10,9 @@ export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwne
     ? `${API_URL}${item.image_url}`
     : null
 
-  const isResolved = ['FOUND', 'CLOSED', 'CLAIMED', 'RETURNED'].includes(item.status)
+  const isResolved = type === 'lost'
+    ? ['FOUND', 'CLOSED'].includes(item.status)
+    : item.status === 'CLAIMED'
 
   return (
     <div className="card group flex flex-col gap-4 hover:border-white/10 transition-all duration-200 relative">

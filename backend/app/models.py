@@ -1,5 +1,4 @@
 import uuid
-import enum
 from datetime import datetime, date
 from sqlalchemy import (
     Column, String, Text, Boolean, DateTime, Date,
@@ -8,32 +7,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from .database import Base
 from .category_constants import PREDEFINED_CATEGORIES
-
-
-# ─── Enums ────────────────────────────────────────────────────────────────────
-
-class Role(str, enum.Enum):
-    STUDENT = "STUDENT"
-    ADMIN = "ADMIN"
-
-
-class LostItemStatus(str, enum.Enum):
-    LOST = "LOST"
-    FOUND = "FOUND"
-    CLOSED = "CLOSED"
-
-
-class FoundItemStatus(str, enum.Enum):
-    AVAILABLE = "AVAILABLE"
-    CLAIM_PENDING = "CLAIM_PENDING"
-    CLAIMED = "CLAIMED"
-    RETURNED = "RETURNED"
-
-
-class ClaimStatus(str, enum.Enum):
-    PENDING = "PENDING"
-    APPROVED = "APPROVED"
-    REJECTED = "REJECTED"
+from .enums import Role, LostItemStatus, FoundItemStatus, ClaimStatus
 
 
 # ─── Models ───────────────────────────────────────────────────────────────────
@@ -45,7 +19,7 @@ class User(Base):
     name = Column(String(100), nullable=False)
     email = Column(String(200), unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
-    role = Column(SAEnum(Role), default=Role.STUDENT, nullable=False)
+    role = Column(SAEnum(Role, name="role", create_type=False), default=Role.STUDENT, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     lost_items = relationship("LostItem", back_populates="user", cascade="all, delete")
@@ -74,7 +48,7 @@ class LostItem(Base):
     category_id = Column(String, ForeignKey("categories.id"), nullable=False)
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     location = Column(String(200), nullable=True)
-    status = Column(SAEnum(LostItemStatus), default=LostItemStatus.LOST, nullable=False)
+    status = Column(SAEnum(LostItemStatus, name="lostitemstatus", create_type=False), default=LostItemStatus.LOST, nullable=False)
     image_url = Column(String, nullable=True)
     date_lost = Column(Date, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -98,7 +72,7 @@ class FoundItem(Base):
     category_id = Column(String, ForeignKey("categories.id"), nullable=False)
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     location = Column(String(200), nullable=True)
-    status = Column(SAEnum(FoundItemStatus), default=FoundItemStatus.AVAILABLE, nullable=False)
+    status = Column(SAEnum(FoundItemStatus, name="founditemstatus", create_type=False), default=FoundItemStatus.AVAILABLE, nullable=False)
     image_url = Column(String, nullable=True)
     date_found = Column(Date, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -120,7 +94,7 @@ class Claim(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     found_item_id = Column(String, ForeignKey("found_items.id"), nullable=False)
     claimant_id = Column(String, ForeignKey("users.id"), nullable=False)
-    status = Column(SAEnum(ClaimStatus), default=ClaimStatus.PENDING, nullable=False)
+    status = Column(SAEnum(ClaimStatus, name="claimstatus", create_type=False), default=ClaimStatus.PENDING, nullable=False)
     description = Column(Text, nullable=True)   # proof of ownership
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

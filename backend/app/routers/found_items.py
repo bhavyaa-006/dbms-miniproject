@@ -25,7 +25,7 @@ def _get_category_or_404(db: Session, category_id) -> models.Category:
 def list_found_items(
     search: Optional[str] = None,
     category_id: Optional[str] = None,
-    status: Optional[str] = None,
+    status: Optional[schemas.FoundItemStatus] = None,
     db: Session = Depends(get_db),
     _: models.User = Depends(get_current_user),
 ):
@@ -159,7 +159,7 @@ async def update_found_item(
     description: Optional[str] = Form(None),
     category_id: Optional[str] = Form(None),
     location: Optional[str] = Form(None),
-    status: Optional[str] = Form(None),
+    status: Optional[schemas.FoundItemStatus] = Form(None),
     date_found: Optional[date] = Form(None),
     image: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
@@ -223,7 +223,7 @@ def delete_found_item(
         if item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
             raise HTTPException(status_code=403, detail="Not authorized")
 
-        if item.status in [models.FoundItemStatus.CLAIMED, models.FoundItemStatus.RETURNED]:
+        if item.status == models.FoundItemStatus.CLAIMED:
             raise HTTPException(status_code=400, detail="Resolved items cannot be deleted")
         if item.image_url:
             delete_upload_file(item.image_url)

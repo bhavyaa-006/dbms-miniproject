@@ -1,35 +1,9 @@
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from datetime import datetime, date
-from enum import Enum
 from uuid import UUID
 from .category_constants import PREDEFINED_CATEGORIES
-
-
-# ─── Enums ────────────────────────────────────────────────────────────────────
-
-class Role(str, Enum):
-    STUDENT = "STUDENT"
-    ADMIN = "ADMIN"
-
-
-class LostItemStatus(str, Enum):
-    LOST = "LOST"
-    FOUND = "FOUND"
-    CLOSED = "CLOSED"
-
-
-class FoundItemStatus(str, Enum):
-    AVAILABLE = "AVAILABLE"
-    CLAIM_PENDING = "CLAIM_PENDING"
-    CLAIMED = "CLAIMED"
-    RETURNED = "RETURNED"
-
-
-class ClaimStatus(str, Enum):
-    PENDING = "PENDING"
-    APPROVED = "APPROVED"
-    REJECTED = "REJECTED"
+from .enums import Role, LostItemStatus, FoundItemStatus, ClaimStatus
 
 
 # ─── Auth ─────────────────────────────────────────────────────────────────────

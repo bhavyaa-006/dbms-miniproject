@@ -9,6 +9,13 @@ sleep 2
 echo "Applying database schemas and initial seed data..."
 # python -m app.seed
 
+echo "Applying Alembic migrations..."
+if command -v alembic >/dev/null 2>&1; then
+    alembic upgrade head
+else
+    echo "Alembic is not available; relying on startup repair"
+fi
+
 # Apply the PostgreSQL trigger
 echo "Applying PostgreSQL triggers..."
 export PGPASSWORD=$POSTGRES_PASSWORD

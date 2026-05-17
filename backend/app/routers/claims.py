@@ -52,7 +52,7 @@ def submit_claim(
         )
         if not found_item:
             raise HTTPException(status_code=404, detail="Found item not found")
-        if found_item.status == models.FoundItemStatus.CLAIMED:
+        if found_item.status != models.FoundItemStatus.AVAILABLE:
             raise HTTPException(status_code=400, detail="This item has already been claimed")
 
         existing = db.query(models.Claim).filter(
@@ -186,7 +186,7 @@ def approve_claim(
             
         # Update statuses
         claim.status = models.ClaimStatus.APPROVED
-        item.status = models.FoundItemStatus.RETURNED
+        item.status = models.FoundItemStatus.CLAIMED
         
         print("Checking for matching Lost Items...")
         matching_lost_items = db.query(models.LostItem).filter(

@@ -12,7 +12,7 @@ import { Link } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { getApiErrorMessage } from '../services/itemService'
 
-const STATUS_OPTIONS = ['AVAILABLE', 'CLAIM_PENDING', 'CLAIMED', 'RETURNED']
+const STATUS_OPTIONS = ['AVAILABLE', 'CLAIMED']
 
 export default function FoundItems() {
   const { user } = useAuth()
