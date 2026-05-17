@@ -2,6 +2,7 @@ import traceback
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from .. import models, schemas
@@ -57,6 +58,16 @@ def _serialize_lost_item_for_list(item: models.LostItem) -> dict:
     }
 
 
+def _repair_invalid_lost_item_statuses(db: Session) -> None:
+    db.execute(
+        text(
+            "UPDATE lost_items SET status = 'LOST' "
+            "WHERE status IS NULL OR status NOT IN ('LOST', 'FOUND', 'CLOSED')"
+        )
+    )
+    db.commit()
+
+
 def _get_category_or_404(db: Session, category_id) -> models.Category:
     category = db.query(models.Category).filter(models.Category.id == str(category_id)).first()
     if not category:
@@ -93,7 +104,24 @@ def list_lost_items(
         db.rollback()
         print(f"GET /lost-items ERROR: {str(exc)}")
         traceback.print_exc()
-        return JSONResponse(status_code=500, content={"success": False, "message": str(exc)})
+        try:
+            _repair_invalid_lost_item_statuses(db)
+            items = (
+                db.query(models.LostItem)
+                .options(
+                    joinedload(models.LostItem.category),
+                    joinedload(models.LostItem.user),
+                )
+                .order_by(models.LostItem.created_at.desc())
+                .all()
+            )
+            print(f"GET /lost-items retry fetched {len(items)} items after repair")
+            return JSONResponse(status_code=200, content=[_serialize_lost_item_for_list(item) for item in items])
+        except Exception as retry_exc:
+            db.rollback()
+            print(f"GET /lost-items retry failed: {str(retry_exc)}")
+            traceback.print_exc()
+            return JSONResponse(status_code=500, content={"success": False, "message": str(retry_exc)})
 
 
 @router.post("", status_code=201)
@@ -130,7 +158,7 @@ async def create_lost_item(
         )
         print(f"Created lost item id={getattr(item, 'id', None)}")
         _log_loaded_item("CREATE", item)
-        return JSONResponse(status_code=201, content=serialize_lost_item(item))
+        return JSONResponse(status_code=201, content=_serialize_lost_item_for_list(item))
     except HTTPException as exc:
         db.rollback()
         print(f"Create lost item validation failed: {str(exc.detail)}")
@@ -163,7 +191,7 @@ def my_lost_items(
         print(f"Fetched {len(items)} my lost items for user_id={current_user.id}")
         for item in items:
             _log_loaded_item("MY", item)
-        return JSONResponse(status_code=200, content=[serialize_lost_item(item) for item in items])
+        return JSONResponse(status_code=200, content=[_serialize_lost_item_for_list(item) for item in items])
     except Exception as exc:
         db.rollback()
         print(f"My lost items query failed: {str(exc)}")
@@ -190,7 +218,7 @@ def get_lost_item(
         if not item:
             raise HTTPException(status_code=404, detail="Lost item not found")
         _log_loaded_item("GET", item)
-        return JSONResponse(status_code=200, content=serialize_lost_item(item))
+        return JSONResponse(status_code=200, content=_serialize_lost_item_for_list(item))
     except HTTPException:
         raise
     except Exception as exc:
@@ -243,16 +271,13 @@ async def update_lost_item(
             db.query(models.LostItem)
             .options(
                 joinedload(models.LostItem.category),
-                joinedload(models.LostItem.user)
-                .selectinload(models.User.claims),
-                joinedload(models.LostItem.user)
-                .selectinload(models.User.notifications),
+                joinedload(models.LostItem.user),
             )
             .filter(models.LostItem.id == item_id)
             .first()
         )
         _log_loaded_item("UPDATE", item)
-        return JSONResponse(status_code=200, content=serialize_lost_item(item))
+        return JSONResponse(status_code=200, content=_serialize_lost_item_for_list(item))
     except Exception as exc:
         db.rollback()
         print(f"Update lost item error: {str(exc)}")

@@ -204,10 +204,24 @@ def _ensure_item_schema(connection):
             _ensure_table_column(connection, table_name, column_name, sql_type)
 
 
+def _repair_lost_item_statuses(connection):
+    inspector = inspect(connection)
+    if "lost_items" not in inspector.get_table_names():
+        return
+
+    connection.execute(
+        text(
+            "UPDATE lost_items SET status = 'LOST' "
+            "WHERE status IS NULL OR status NOT IN ('LOST', 'FOUND', 'CLOSED')"
+        )
+    )
+
+
 def ensure_database_schema():
     with engine.begin() as connection:
         _seed_default_categories(connection)
         _ensure_item_schema(connection)
+        _repair_lost_item_statuses(connection)
         _ensure_category_foreign_key(connection, "lost_items")
         _ensure_category_foreign_key(connection, "found_items")
         _ensure_notification_schema(connection)
