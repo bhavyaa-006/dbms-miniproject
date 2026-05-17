@@ -106,17 +106,24 @@ def approve_claim(
     current_user: models.User = Depends(get_current_user),
 ):
     """Approve a claim, update item status, notify claimant."""
+    import traceback
     logger.info(f"Incoming approve request: claim_id={claim_id}, user={current_user.email}")
-    claim = db.query(models.Claim).filter(models.Claim.id == claim_id).first()
-    if not claim:
-        logger.warning(f"Claim not found: {claim_id}")
-        raise HTTPException(status_code=404, detail="Claim not found")
-        
-    if claim.found_item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
-        logger.warning(f"Unauthorized approval attempt by {current_user.email} for claim {claim_id}")
-        raise HTTPException(status_code=403, detail="Not authorized to manage this claim")
-        
+    print("Approve endpoint hit")
+    print("Claim ID:", claim_id)
+    print("Current user:", current_user.id)
+    
     try:
+        claim = db.query(models.Claim).filter(models.Claim.id == claim_id).first()
+        if not claim:
+            logger.warning(f"Claim not found: {claim_id}")
+            raise HTTPException(status_code=404, detail="Claim not found")
+            
+        print("Claim found_item user_id:", claim.found_item.user_id)
+            
+        if claim.found_item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
+            logger.warning(f"Unauthorized approval attempt by {current_user.email} for claim {claim_id}")
+            raise HTTPException(status_code=403, detail="Not authorized to manage this claim")
+            
         claim.status = models.ClaimStatus.APPROVED
         claim.found_item.status = models.FoundItemStatus.CLAIMED
         
@@ -134,9 +141,13 @@ def approve_claim(
         logger.info(f"Claim {claim_id} successfully approved.")
         return {
             "success": True,
-            "message": "Claim approved"
+            "message": "Claim approved successfully"
         }
+    except HTTPException:
+        raise
     except Exception as e:
+        print(str(e))
+        traceback.print_exc()
         db.rollback()
         logger.error(f"DB commit error during claim approval: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error during claim approval")
@@ -148,17 +159,24 @@ def reject_claim(
     current_user: models.User = Depends(get_current_user),
 ):
     """Reject a claim, notify claimant."""
+    import traceback
     logger.info(f"Incoming reject request: claim_id={claim_id}, user={current_user.email}")
-    claim = db.query(models.Claim).filter(models.Claim.id == claim_id).first()
-    if not claim:
-        logger.warning(f"Claim not found: {claim_id}")
-        raise HTTPException(status_code=404, detail="Claim not found")
-        
-    if claim.found_item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
-        logger.warning(f"Unauthorized rejection attempt by {current_user.email} for claim {claim_id}")
-        raise HTTPException(status_code=403, detail="Not authorized to manage this claim")
-        
+    print("Reject endpoint hit")
+    print("Claim ID:", claim_id)
+    print("Current user:", current_user.id)
+    
     try:
+        claim = db.query(models.Claim).filter(models.Claim.id == claim_id).first()
+        if not claim:
+            logger.warning(f"Claim not found: {claim_id}")
+            raise HTTPException(status_code=404, detail="Claim not found")
+            
+        print("Claim found_item user_id:", claim.found_item.user_id)
+            
+        if claim.found_item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
+            logger.warning(f"Unauthorized rejection attempt by {current_user.email} for claim {claim_id}")
+            raise HTTPException(status_code=403, detail="Not authorized to manage this claim")
+            
         claim.status = models.ClaimStatus.REJECTED
         
         _create_notification(
@@ -175,9 +193,13 @@ def reject_claim(
         logger.info(f"Claim {claim_id} successfully rejected.")
         return {
             "success": True,
-            "message": "Claim rejected"
+            "message": "Claim rejected successfully"
         }
+    except HTTPException:
+        raise
     except Exception as e:
+        print(str(e))
+        traceback.print_exc()
         db.rollback()
         logger.error(f"DB commit error during claim rejection: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error during claim rejection")

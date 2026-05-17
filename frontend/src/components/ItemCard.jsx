@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MapPin, Calendar, User, Tag } from 'lucide-react'
+import { MapPin, Calendar, User, Tag, CheckCircle, XCircle } from 'lucide-react'
 import StatusBadge from './StatusBadge'
 import { API_URL } from '../services/api'
 
-export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwner }) {
+export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwner, itemClaims, onApproveClaim, onRejectClaim, updatingClaim }) {
   const [imgError, setImgError] = useState(false)
   const imageUrl = item.image_url && !imgError
     ? `${API_URL}${item.image_url}`
@@ -71,7 +71,7 @@ export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwne
             Claim This
           </button>
         )}
-        {isOwner && (
+        {isOwner && (!itemClaims || itemClaims.length === 0) && (
           <Link to={`/claims`} className="btn-primary text-xs py-1.5 flex-1 text-center">
             View Claims
           </Link>
@@ -85,6 +85,39 @@ export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwne
             className="btn-danger text-xs py-1.5">Delete</button>
         )}
       </div>
+
+      {/* Inline Pending Claims */}
+      {isOwner && itemClaims && itemClaims.some(c => c.status === 'PENDING') && (
+        <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-white/10">
+          <p className="text-xs font-semibold text-zinc-300">Pending Claims:</p>
+          {itemClaims.filter(c => c.status === 'PENDING').map(claim => (
+            <div key={claim.id} className="bg-surface-3 p-2.5 rounded-lg border border-white/5 flex flex-col gap-2">
+              <div>
+                <p className="text-xs font-medium text-zinc-200">{claim.claimant?.name}</p>
+                {claim.description && (
+                  <p className="text-[11px] text-zinc-400 mt-0.5 line-clamp-2">Proof: {claim.description}</p>
+                )}
+              </div>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => onApproveClaim(claim.id)}
+                  disabled={updatingClaim === claim.id}
+                  className="flex flex-1 items-center justify-center gap-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-md py-1 text-[11px] font-medium transition-all"
+                >
+                  <CheckCircle size={12} /> Approve
+                </button>
+                <button
+                  onClick={() => onRejectClaim(claim.id)}
+                  disabled={updatingClaim === claim.id}
+                  className="flex flex-1 items-center justify-center gap-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-md py-1 text-[11px] font-medium transition-all"
+                >
+                  <XCircle size={12} /> Reject
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

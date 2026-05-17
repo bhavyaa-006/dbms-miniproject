@@ -13,12 +13,30 @@ def get_notifications(
     current_user: models.User = Depends(get_current_user),
 ):
     """Get all notifications for the current user (newest first)."""
-    return (
-        db.query(models.Notification)
-        .filter(models.Notification.recipient_user_id == current_user.id)
-        .order_by(models.Notification.created_at.desc())
-        .all()
-    )
+    try:
+        # Eager load relationships to prevent lazy-loading serialization errors
+        from sqlalchemy.orm import joinedload
+        notifications = (
+            db.query(models.Notification)
+            .options(
+                joinedload(models.Notification.sender),
+                joinedload(models.Notification.related_claim).joinedload(models.Claim.found_item).joinedload(models.FoundItem.user),
+                joinedload(models.Notification.related_claim).joinedload(models.Claim.claimant),
+                joinedload(models.Notification.related_claim).joinedload(models.Claim.found_item).joinedload(models.FoundItem.category),
+                joinedload(models.Notification.related_item).joinedload(models.FoundItem.user),
+                joinedload(models.Notification.related_item).joinedload(models.FoundItem.category),
+            )
+            .filter(models.Notification.recipient_user_id == current_user.id)
+            .order_by(models.Notification.created_at.desc())
+            .all()
+        )
+        return notifications
+    except Exception as e:
+        print(f"Error fetching notifications: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail="Internal server error while fetching notifications")
 
 
 @router.put("/{notif_id}/read", response_model=schemas.NotificationOut)

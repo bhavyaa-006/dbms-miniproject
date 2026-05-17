@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { getFoundItems, getCategories, deleteFoundItem } from '../services/itemService'
+import { getAllClaims, approveClaim, rejectClaim } from '../services/claimService'
 import SearchFilter from '../components/SearchFilter'
 import ItemCard from '../components/ItemCard'
 import ClaimModal from '../components/ClaimModal'
@@ -22,6 +23,8 @@ export default function FoundItems() {
   const [categoryId, setCategoryId] = useState('')
   const [status, setStatus] = useState('')
   const [claimItem, setClaimItem] = useState(null)
+  const [claims, setClaims] = useState([])
+  const [updatingClaim, setUpdatingClaim] = useState(null)
   const [error, setError] = useState('')
   const [categoryError, setCategoryError] = useState('')
 
@@ -31,12 +34,20 @@ export default function FoundItems() {
     try {
       const res = await getFoundItems({ search: search || undefined, category_id: categoryId || undefined, status: status || undefined })
       setItems(res.data)
+      if (user) {
+        try {
+          const claimsRes = await getAllClaims()
+          setClaims(claimsRes.data)
+        } catch (e) {
+          // Ignore claims fetch error if it's just unavailable
+        }
+      }
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to load found items')
     } finally {
       setLoading(false)
     }
-  }, [search, categoryId, status])
+  }, [search, categoryId, status, user])
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -60,6 +71,32 @@ export default function FoundItems() {
       fetchItems()
     } catch {
       addToast('Failed to delete', 'error')
+    }
+  }
+
+  const handleApproveClaim = async (id) => {
+    setUpdatingClaim(id)
+    try {
+      await approveClaim(id)
+      addToast('Claim approved successfully', 'success')
+      fetchItems()
+    } catch (err) {
+      addToast(err.response?.data?.detail || 'Action failed', 'error')
+    } finally {
+      setUpdatingClaim(null)
+    }
+  }
+
+  const handleRejectClaim = async (id) => {
+    setUpdatingClaim(id)
+    try {
+      await rejectClaim(id)
+      addToast('Claim rejected successfully', 'success')
+      fetchItems()
+    } catch (err) {
+      addToast(err.response?.data?.detail || 'Action failed', 'error')
+    } finally {
+      setUpdatingClaim(null)
     }
   }
 
@@ -105,7 +142,9 @@ export default function FoundItems() {
         )
         : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {items.map(item => (
+            {items.map(item => {
+              const itemClaims = claims.filter(c => c.found_item?.id === item.id)
+              return (
               <ItemCard
                 key={item.id}
                 item={item}
@@ -113,8 +152,12 @@ export default function FoundItems() {
                 isOwner={item.user?.id === user?.id || user?.role === 'ADMIN'}
                 onClaim={item.user?.id !== user?.id ? setClaimItem : null}
                 onDelete={handleDelete}
+                itemClaims={itemClaims}
+                onApproveClaim={handleApproveClaim}
+                onRejectClaim={handleRejectClaim}
+                updatingClaim={updatingClaim}
               />
-            ))}
+            )})}
           </div>
         )}
 
