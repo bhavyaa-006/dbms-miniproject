@@ -2,7 +2,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from datetime import datetime, date
 from enum import Enum
-from .category_constants import PREDEFINED_CATEGORIES, DEFAULT_CATEGORY, validate_category_input
+from .category_constants import PREDEFINED_CATEGORIES, validate_category_input
 
 
 # ─── Enums ────────────────────────────────────────────────────────────────────

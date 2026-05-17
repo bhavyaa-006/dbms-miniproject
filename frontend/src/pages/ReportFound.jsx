@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getCategories, createFoundItem } from '../services/itemService'
+import { getCategories, createFoundItem, getApiErrorMessage } from '../services/itemService'
 import { useToast } from '../context/ToastContext'
 import PageState from '../components/PageState'
 import { Upload } from 'lucide-react'
@@ -64,7 +64,8 @@ export default function ReportFound() {
       addToast('Found item reported successfully!', 'success')
       navigate('/found-items')
     } catch (err) {
-      addToast(err.response?.data?.detail || 'Failed to submit', 'error')
+      console.error('Found item submit failed:', err)
+      addToast(getApiErrorMessage(err) || 'Failed to submit', 'error')
     } finally {
       setLoading(false)
     }

@@ -12,7 +12,11 @@ export function AuthProvider({ children }) {
     if (token) {
       api.get('/auth/me')
         .then(res => setUser(res.data))
-        .catch(() => { localStorage.removeItem('token'); setUser(null) })
+        .catch(error => {
+          console.error('Auth bootstrap failed:', error)
+          localStorage.removeItem('token')
+          setUser(null)
+        })
         .finally(() => setLoading(false))
     } else {
       setLoading(false)

@@ -3,6 +3,8 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { ToastProvider } from './context/ToastContext'
 import AuthLayout from './layouts/AuthLayout'
 import DashboardLayout from './layouts/DashboardLayout'
+import LoadingSpinner from './components/LoadingSpinner'
+import AppErrorBoundary from './components/AppErrorBoundary'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
@@ -16,13 +18,13 @@ import Notifications from './pages/Notifications'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return null
+  if (loading) return <LoadingSpinner />
   return user ? children : <Navigate to="/login" replace />
 }
 
 function AdminRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return null
+  if (loading) return <LoadingSpinner />
   if (!user) return <Navigate to="/login" replace />
   if (user.role !== 'ADMIN') return <Navigate to="/dashboard" replace />
   return children
@@ -30,40 +32,42 @@ function AdminRoute({ children }) {
 
 function GuestRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return null
+  if (loading) return <LoadingSpinner />
   return !user ? children : <Navigate to="/dashboard" replace />
 }
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <ToastProvider>
-          <Routes>
-            {/* Guest routes */}
-            <Route element={<AuthLayout />}>
-              <Route path="/login"    element={<GuestRoute><Login /></GuestRoute>} />
-              <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
-            </Route>
+    <AppErrorBoundary fallback={<div className="min-h-screen flex items-center justify-center p-6 text-zinc-200">The app hit an unexpected error. Please refresh the page.</div>}>
+      <BrowserRouter>
+        <AuthProvider>
+          <ToastProvider>
+            <Routes>
+              {/* Guest routes */}
+              <Route element={<AuthLayout />}>
+                <Route path="/login"    element={<GuestRoute><Login /></GuestRoute>} />
+                <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+              </Route>
 
-            {/* Protected routes */}
-            <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-              <Route path="/dashboard"    element={<Dashboard />} />
-              <Route path="/lost-items"   element={<LostItems />} />
-              <Route path="/report-lost"  element={<ReportLost />} />
-              <Route path="/found-items"  element={<FoundItems />} />
-              <Route path="/report-found" element={<ReportFound />} />
-              <Route path="/my-claims"    element={<MyClaims />} />
-              <Route path="/notifications" element={<Notifications />} />
-              {/* Admin only */}
-              <Route path="/claims" element={<AdminRoute><Claims /></AdminRoute>} />
-            </Route>
+              {/* Protected routes */}
+              <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                <Route path="/dashboard"    element={<Dashboard />} />
+                <Route path="/lost-items"   element={<LostItems />} />
+                <Route path="/report-lost"  element={<ReportLost />} />
+                <Route path="/found-items"  element={<FoundItems />} />
+                <Route path="/report-found" element={<ReportFound />} />
+                <Route path="/my-claims"    element={<MyClaims />} />
+                <Route path="/notifications" element={<Notifications />} />
+                {/* Admin only */}
+                <Route path="/claims" element={<AdminRoute><Claims /></AdminRoute>} />
+              </Route>
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </ToastProvider>
-      </AuthProvider>
-    </BrowserRouter>
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </ToastProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </AppErrorBoundary>
   )
 }

@@ -1,23 +1,26 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date
 from .. import models, schemas
 from ..dependencies import get_db, get_current_user
 from ..utils.file_upload import save_upload_file, delete_upload_file
-from ..category_constants import normalize_category, PREDEFINED_CATEGORIES, validate_category_input
+from ..category_constants import DEFAULT_CATEGORY, normalize_category, PREDEFINED_CATEGORIES, validate_category_input
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/lost-items", tags=["Lost Items"])
 
 
-def _resolve_category_name(db: Session, category: Optional[str], category_id: Optional[str], required: bool = False) -> Optional[str]:
-    if category is not None:
-        if not category.strip():
-            raise HTTPException(status_code=422, detail="Category is required")
+def _resolve_category_name(db: Session, category: Optional[str], category_id: Optional[str], required: bool = False) -> str:
+    if category is not None and category.strip():
         try:
             return validate_category_input(category)
-        except ValueError as exc:
-            raise HTTPException(status_code=422, detail="Invalid category") from exc
+        except ValueError:
+            logger.warning("Invalid lost item category submitted: %s", category)
+            return DEFAULT_CATEGORY
 
     if category_id:
         legacy_category = db.query(models.Category).filter(models.Category.id == category_id).first()
@@ -25,8 +28,8 @@ def _resolve_category_name(db: Session, category: Optional[str], category_id: Op
             return normalize_category(legacy_category.name)
 
     if required:
-        raise HTTPException(status_code=422, detail="Category is required")
-    return None
+        return DEFAULT_CATEGORY
+    return DEFAULT_CATEGORY
 
 
 @router.get("", response_model=List[schemas.LostItemOut])
@@ -46,7 +49,7 @@ def list_lost_items(
     if category is not None or category_id is not None:
         resolved_category = _resolve_category_name(db, category, category_id)
     if resolved_category:
-        q = q.filter(models.LostItem.category_name == resolved_category)
+        q = q.filter(models.LostItem.category == resolved_category)
     if status:
         q = q.filter(models.LostItem.status == status)
     return q.order_by(models.LostItem.created_at.desc()).all()
@@ -65,25 +68,33 @@ async def create_lost_item(
     current_user: models.User = Depends(get_current_user),
 ):
     """Report a lost item (with optional image upload)."""
-    image_url = None
-    if image and image.filename:
-        image_url = await save_upload_file(image)
+    try:
+        image_url = None
+        if image and image.filename:
+            image_url = await save_upload_file(image)
 
-    resolved_category = _resolve_category_name(db, category, category_id, required=True)
+        resolved_category = _resolve_category_name(db, category, category_id, required=True)
 
-    item = models.LostItem(
-        title=title,
-        description=description,
-        category=resolved_category,
-        user_id=current_user.id,
-        location=location,
-        date_lost=date_lost,
-        image_url=image_url,
-    )
-    db.add(item)
-    db.commit()
-    db.refresh(item)
-    return item
+        item = models.LostItem(
+            title=title,
+            description=description,
+            category=resolved_category,
+            user_id=current_user.id,
+            location=location,
+            date_lost=date_lost,
+            image_url=image_url,
+        )
+        db.add(item)
+        db.commit()
+        db.refresh(item)
+        return item
+    except Exception as exc:
+        db.rollback()
+        logger.exception("Failed to create lost item title=%s user_id=%s", title, current_user.id)
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": "Failed to report lost item"},
+        )
 
 
 @router.get("/my", response_model=List[schemas.LostItemOut])

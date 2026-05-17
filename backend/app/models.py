@@ -69,7 +69,7 @@ class LostItem(Base):
     title = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
     category_id = Column(String, ForeignKey("categories.id"), nullable=True)
-    category_name = Column(String(100), nullable=False, default=DEFAULT_CATEGORY)
+    category = Column(String(100), nullable=False, default=DEFAULT_CATEGORY)
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     location = Column(String(200), nullable=True)
     status = Column(SAEnum(LostItemStatus), default=LostItemStatus.PENDING, nullable=False)
@@ -80,26 +80,14 @@ class LostItem(Base):
     user = relationship("User", back_populates="lost_items")
     category_ref = relationship("Category", back_populates="lost_items")
 
-    @property
-    def category(self):
-        if self.category_name:
-            return normalize_category(self.category_name)
-        if self.category_ref and self.category_ref.name:
-            return normalize_category(self.category_ref.name)
-        return DEFAULT_CATEGORY
-
-    @category.setter
-    def category(self, value):
-        self.category_name = validate_category_input(value)
-
     __table_args__ = (
         Index("ix_lost_items_status", "status"),
         Index("ix_lost_items_category_id", "category_id"),
-        Index("ix_lost_items_category_name", "category_name"),
+        Index("ix_lost_items_category", "category"),
         Index("ix_lost_items_user_id", "user_id"),
         CheckConstraint(
-            f"category_name IN ({', '.join(repr(category) for category in PREDEFINED_CATEGORIES)})",
-            name="ck_lost_items_category_name",
+            f"category IN ({', '.join(repr(category) for category in PREDEFINED_CATEGORIES)})",
+            name="ck_lost_items_category",
         ),
     )
 
@@ -111,7 +99,7 @@ class FoundItem(Base):
     title = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
     category_id = Column(String, ForeignKey("categories.id"), nullable=True)
-    category_name = Column(String(100), nullable=False, default=DEFAULT_CATEGORY)
+    category = Column(String(100), nullable=False, default=DEFAULT_CATEGORY)
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     location = Column(String(200), nullable=True)
     status = Column(SAEnum(FoundItemStatus), default=FoundItemStatus.AVAILABLE, nullable=False)
@@ -123,26 +111,14 @@ class FoundItem(Base):
     category_ref = relationship("Category", back_populates="found_items")
     claims = relationship("Claim", back_populates="found_item")
 
-    @property
-    def category(self):
-        if self.category_name:
-            return normalize_category(self.category_name)
-        if self.category_ref and self.category_ref.name:
-            return normalize_category(self.category_ref.name)
-        return DEFAULT_CATEGORY
-
-    @category.setter
-    def category(self, value):
-        self.category_name = validate_category_input(value)
-
     __table_args__ = (
         Index("ix_found_items_status", "status"),
         Index("ix_found_items_category_id", "category_id"),
-        Index("ix_found_items_category_name", "category_name"),
+        Index("ix_found_items_category", "category"),
         Index("ix_found_items_user_id", "user_id"),
         CheckConstraint(
-            f"category_name IN ({', '.join(repr(category) for category in PREDEFINED_CATEGORIES)})",
-            name="ck_found_items_category_name",
+            f"category IN ({', '.join(repr(category) for category in PREDEFINED_CATEGORIES)})",
+            name="ck_found_items_category",
         ),
     )
 

@@ -70,7 +70,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
     return JSONResponse(
         status_code=422,
-        content={"detail": exc.errors(), "message": "Validation failed"},
+        content={"success": False, "message": "Validation failed", "detail": exc.errors()},
     )
 
 
@@ -85,7 +85,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     )
     return JSONResponse(
         status_code=exc.status_code,
-        content={"detail": exc.detail, "message": str(exc.detail)},
+        content={"success": False, "message": str(exc.detail), "detail": exc.detail},
     )
 
 
@@ -98,29 +98,29 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     )
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal server error", "message": "Internal server error"},
+        content={"success": False, "message": "Internal server error", "detail": "Internal server error"},
     )
 
 
 def _ensure_category_column(connection, table_name: str):
     inspector = inspect(connection)
     columns = {column["name"] for column in inspector.get_columns(table_name)}
-    if "category_name" in columns:
+    if "category" in columns:
         return
 
-    connection.execute(text(f"ALTER TABLE {table_name} ADD COLUMN category_name VARCHAR(100)"))
+    connection.execute(text(f"ALTER TABLE {table_name} ADD COLUMN category VARCHAR(100)"))
     default_sql = f"'{DEFAULT_CATEGORY}'"
     connection.execute(
         text(
-            f"UPDATE {table_name} SET category_name = COALESCE(category_name, :default_category)"
+            f"UPDATE {table_name} SET category = COALESCE(category, category_name, :default_category)"
         ),
         {"default_category": DEFAULT_CATEGORY},
     )
-    connection.execute(text(f"UPDATE {table_name} SET category_name = :default_category WHERE category_name IS NULL OR TRIM(category_name) = ''"), {"default_category": DEFAULT_CATEGORY})
+    connection.execute(text(f"UPDATE {table_name} SET category = :default_category WHERE category IS NULL OR TRIM(category) = ''"), {"default_category": DEFAULT_CATEGORY})
     allowed_sql = ", ".join(f"'{category}'" for category in PREDEFINED_CATEGORIES)
-    connection.execute(text(f"UPDATE {table_name} SET category_name = :default_category WHERE category_name NOT IN ({allowed_sql})"), {"default_category": DEFAULT_CATEGORY})
-    connection.execute(text(f"ALTER TABLE {table_name} ALTER COLUMN category_name SET DEFAULT {default_sql}"))
-    connection.execute(text(f"ALTER TABLE {table_name} ALTER COLUMN category_name SET NOT NULL"))
+    connection.execute(text(f"UPDATE {table_name} SET category = :default_category WHERE category NOT IN ({allowed_sql})"), {"default_category": DEFAULT_CATEGORY})
+    connection.execute(text(f"ALTER TABLE {table_name} ALTER COLUMN category SET DEFAULT {default_sql}"))
+    connection.execute(text(f"ALTER TABLE {table_name} ALTER COLUMN category SET NOT NULL"))
 
 
 def ensure_category_schema():
