@@ -19,7 +19,7 @@ export default function FoundItems() {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [category, setCategory] = useState('')
+  const [categoryId, setCategoryId] = useState('')
   const [status, setStatus] = useState('')
   const [claimItem, setClaimItem] = useState(null)
   const [error, setError] = useState('')
@@ -29,14 +29,14 @@ export default function FoundItems() {
     setLoading(true)
     setError('')
     try {
-      const res = await getFoundItems({ search: search || undefined, category: category || undefined, status: status || undefined })
+      const res = await getFoundItems({ search: search || undefined, category_id: categoryId || undefined, status: status || undefined })
       setItems(res.data)
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to load found items')
     } finally {
       setLoading(false)
     }
-  }, [search, category, status])
+  }, [search, categoryId, status])
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -77,7 +77,7 @@ export default function FoundItems() {
 
       <SearchFilter
         search={search} onSearch={setSearch}
-        category={category} onCategory={setCategory}
+        categoryId={categoryId} onCategory={setCategoryId}
         status={status} onStatus={setStatus}
         categories={categories} statusOptions={STATUS_OPTIONS}
       />

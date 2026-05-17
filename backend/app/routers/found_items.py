@@ -6,7 +6,6 @@ from datetime import date
 from .. import models, schemas
 from ..dependencies import get_db, get_current_user
 from ..utils.file_upload import save_upload_file, delete_upload_file
-from ..category_constants import DEFAULT_CATEGORY, normalize_category, PREDEFINED_CATEGORIES, validate_category_input
 import logging
 
 logger = logging.getLogger(__name__)
@@ -14,28 +13,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/found-items", tags=["Found Items"])
 
 
-def _resolve_category_name(db: Session, category: Optional[str], category_id: Optional[str], required: bool = False) -> str:
-    if category is not None and category.strip():
-        try:
-            return validate_category_input(category)
-        except ValueError:
-            logger.warning("Invalid found item category submitted: %s", category)
-            return DEFAULT_CATEGORY
-
-    if category_id:
-        legacy_category = db.query(models.Category).filter(models.Category.id == category_id).first()
-        if legacy_category and legacy_category.name:
-            return normalize_category(legacy_category.name)
-
-    if required:
-        return DEFAULT_CATEGORY
-    return DEFAULT_CATEGORY
+def _get_category_or_404(db: Session, category_id: str) -> models.Category:
+    category = db.query(models.Category).filter(models.Category.id == category_id).first()
+    if not category:
+        raise HTTPException(status_code=422, detail="Invalid category")
+    return category
 
 
 @router.get("", response_model=List[schemas.FoundItemOut])
 def list_found_items(
     search: Optional[str] = None,
-    category: Optional[str] = None,
     category_id: Optional[str] = None,
     status: Optional[str] = None,
     db: Session = Depends(get_db),
@@ -45,11 +32,8 @@ def list_found_items(
     q = db.query(models.FoundItem)
     if search:
         q = q.filter(models.FoundItem.title.ilike(f"%{search}%"))
-    resolved_category = None
-    if category is not None or category_id is not None:
-        resolved_category = _resolve_category_name(db, category, category_id)
-    if resolved_category:
-        q = q.filter(models.FoundItem.category == resolved_category)
+    if category_id:
+        q = q.filter(models.FoundItem.category_id == category_id)
     if status:
         q = q.filter(models.FoundItem.status == status)
     return q.order_by(models.FoundItem.created_at.desc()).all()
@@ -59,8 +43,7 @@ def list_found_items(
 async def create_found_item(
     title: str = Form(...),
     description: Optional[str] = Form(None),
-    category: Optional[str] = Form(None),
-    category_id: Optional[str] = Form(None),
+    category_id: str = Form(...),
     location: Optional[str] = Form(None),
     date_found: date = Form(...),
     image: Optional[UploadFile] = File(None),
@@ -73,12 +56,12 @@ async def create_found_item(
         if image and image.filename:
             image_url = await save_upload_file(image)
 
-        resolved_category = _resolve_category_name(db, category, category_id, required=True)
+        category = _get_category_or_404(db, category_id)
 
         item = models.FoundItem(
             title=title,
             description=description,
-            category=resolved_category,
+            category_id=category.id,
             user_id=current_user.id,
             location=location,
             date_found=date_found,
@@ -127,7 +110,6 @@ async def update_found_item(
     item_id: str,
     title: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
-    category: Optional[str] = Form(None),
     category_id: Optional[str] = Form(None),
     location: Optional[str] = Form(None),
     status: Optional[str] = Form(None),
@@ -146,8 +128,8 @@ async def update_found_item(
         item.title = title
     if description is not None:
         item.description = description
-    if category is not None or category_id is not None:
-        item.category = _resolve_category_name(db, category, category_id, required=True)
+    if category_id is not None:
+        item.category_id = _get_category_or_404(db, category_id).id
     if location is not None:
         item.location = location
     if status:

@@ -15,7 +15,7 @@ export default function ReportFound() {
   const [categoryValidationError, setCategoryValidationError] = useState('')
   const categoryUnavailable = !categoryLoading && !categoryError && categories.length === 0
   const [form, setForm] = useState({
-    title: '', description: '', category: '', location: '', date_found: ''
+    title: '', description: '', category_id: '', location: '', date_found: ''
   })
   const [image, setImage] = useState(null)
   const [preview, setPreview] = useState(null)
@@ -46,7 +46,7 @@ export default function ReportFound() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.category) {
+    if (!form.category_id) {
       setCategoryValidationError('Please select a category')
       return
     }
@@ -109,9 +109,9 @@ export default function ReportFound() {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="label">Category *</label>
-              <select name="category" required value={form.category} onChange={(e) => { handleChange(e); setCategoryValidationError('') }} className="input" disabled={categoryLoading || !!categoryError || categoryUnavailable}>
+              <select name="category_id" required value={form.category_id} onChange={(e) => { handleChange(e); setCategoryValidationError('') }} className="input" disabled={categoryLoading || !!categoryError || categoryUnavailable}>
                 <option value="">{categoryLoading ? 'Loading categories...' : 'Select Category'}</option>
-                {categories.map(categoryName => <option key={categoryName} value={categoryName}>{categoryName}</option>)}
+                {categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
               </select>
             {categoryValidationError && <p className="mt-1 text-xs text-red-300">{categoryValidationError}</p>}
           </div>

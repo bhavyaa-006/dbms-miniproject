@@ -5,7 +5,7 @@ export { getApiErrorMessage }
 // ── Categories ─────────────────────────────────────────────────────────────
 export const getCategories = async () => {
 	const response = await api.get('/categories')
-	return { ...response, data: response.data?.categories || [] }
+	return { ...response, data: response.data || [] }
 }
 
 const multipartHeaders = {

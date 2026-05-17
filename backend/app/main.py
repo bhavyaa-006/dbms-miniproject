@@ -1,5 +1,6 @@
 import logging
 import os
+import uuid
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -102,31 +103,55 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     )
 
 
-def _ensure_category_column(connection, table_name: str):
+def _seed_default_categories(connection):
+    existing = {row[0] for row in connection.execute(text("SELECT name FROM categories")).all()}
+    missing = [name for name in PREDEFINED_CATEGORIES if name not in existing]
+    for name in missing:
+        connection.execute(
+            text("INSERT INTO categories (id, name) VALUES (:id, :name)"),
+            {"id": str(uuid.uuid4()), "name": name},
+        )
+
+
+def _ensure_category_foreign_key(connection, table_name: str):
     inspector = inspect(connection)
     columns = {column["name"] for column in inspector.get_columns(table_name)}
-    if "category" in columns:
-        return
+    if "category_id" not in columns:
+        connection.execute(text(f"ALTER TABLE {table_name} ADD COLUMN category_id VARCHAR"))
 
-    connection.execute(text(f"ALTER TABLE {table_name} ADD COLUMN category VARCHAR(100)"))
-    default_sql = f"'{DEFAULT_CATEGORY}'"
-    connection.execute(
-        text(
-            f"UPDATE {table_name} SET category = COALESCE(category, category_name, :default_category)"
-        ),
-        {"default_category": DEFAULT_CATEGORY},
-    )
-    connection.execute(text(f"UPDATE {table_name} SET category = :default_category WHERE category IS NULL OR TRIM(category) = ''"), {"default_category": DEFAULT_CATEGORY})
-    allowed_sql = ", ".join(f"'{category}'" for category in PREDEFINED_CATEGORIES)
-    connection.execute(text(f"UPDATE {table_name} SET category = :default_category WHERE category NOT IN ({allowed_sql})"), {"default_category": DEFAULT_CATEGORY})
-    connection.execute(text(f"ALTER TABLE {table_name} ALTER COLUMN category SET DEFAULT {default_sql}"))
-    connection.execute(text(f"ALTER TABLE {table_name} ALTER COLUMN category SET NOT NULL"))
+    legacy_column = None
+    if "category" in columns:
+        legacy_column = "category"
+    elif "category_name" in columns:
+        legacy_column = "category_name"
+
+    if legacy_column:
+        connection.execute(
+            text(
+                f"UPDATE {table_name} AS item SET category_id = category_lookup.id "
+                f"FROM categories AS category_lookup "
+                f"WHERE item.category_id IS NULL AND item.{legacy_column} = category_lookup.name"
+            )
+        )
+
+    others_id = connection.execute(
+        text("SELECT id FROM categories WHERE name = :name LIMIT 1"),
+        {"name": DEFAULT_CATEGORY},
+    ).scalar_one_or_none()
+    if others_id:
+        connection.execute(
+            text(f"UPDATE {table_name} SET category_id = :others_id WHERE category_id IS NULL"),
+            {"others_id": others_id},
+        )
+
+    connection.execute(text(f"ALTER TABLE {table_name} ALTER COLUMN category_id SET NOT NULL"))
 
 
 def ensure_category_schema():
     with engine.begin() as connection:
-        _ensure_category_column(connection, "lost_items")
-        _ensure_category_column(connection, "found_items")
+        _seed_default_categories(connection)
+        _ensure_category_foreign_key(connection, "lost_items")
+        _ensure_category_foreign_key(connection, "found_items")
 
 # ─── Static files (uploaded images) ──────────────────────────────────────────
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")

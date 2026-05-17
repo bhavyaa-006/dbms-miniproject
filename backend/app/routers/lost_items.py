@@ -1,15 +1,12 @@
 import traceback
 
-from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import date
 from .. import models, schemas
 from ..dependencies import get_db, get_current_user
-from ..utils.file_upload import save_upload_file, delete_upload_file
-from ..category_constants import DEFAULT_CATEGORY, normalize_category, PREDEFINED_CATEGORIES, validate_category_input
 import logging
 
 logger = logging.getLogger(__name__)
@@ -17,28 +14,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/lost-items", tags=["Lost Items"])
 
 
-def _resolve_category_name(db: Session, category: Optional[str], category_id: Optional[str], required: bool = False) -> str:
-    if category is not None and category.strip():
-        try:
-            return validate_category_input(category)
-        except ValueError:
-            logger.warning("Invalid lost item category submitted: %s", category)
-            return DEFAULT_CATEGORY
-
-    if category_id:
-        legacy_category = db.query(models.Category).filter(models.Category.id == category_id).first()
-        if legacy_category and legacy_category.name:
-            return normalize_category(legacy_category.name)
-
-    if required:
-        return DEFAULT_CATEGORY
-    return DEFAULT_CATEGORY
+def _get_category_or_404(db: Session, category_id: str) -> models.Category:
+    category = db.query(models.Category).filter(models.Category.id == category_id).first()
+    if not category:
+        raise HTTPException(status_code=422, detail="Invalid category")
+    return category
 
 
 @router.get("", response_model=List[schemas.LostItemOut])
 def list_lost_items(
     search: Optional[str] = None,
-    category: Optional[str] = None,
     category_id: Optional[str] = None,
     status: Optional[str] = None,
     db: Session = Depends(get_db),
@@ -48,11 +33,8 @@ def list_lost_items(
     q = db.query(models.LostItem)
     if search:
         q = q.filter(models.LostItem.title.ilike(f"%{search}%"))
-    resolved_category = None
-    if category is not None or category_id is not None:
-        resolved_category = _resolve_category_name(db, category, category_id)
-    if resolved_category:
-        q = q.filter(models.LostItem.category == resolved_category)
+    if category_id:
+        q = q.filter(models.LostItem.category_id == category_id)
     if status:
         q = q.filter(models.LostItem.status == status)
     return q.order_by(models.LostItem.created_at.desc()).all()
@@ -72,17 +54,16 @@ async def create_lost_item(
         logger.info("Incoming lost item payload: %s", request_data)
         logger.info("Validated lost item payload: %s", payload.model_dump())
 
-        image_url = None
         logger.info("Attempting lost item database insert for user_id=%s", current_user.id)
+        category = _get_category_or_404(db, payload.category_id)
 
         item = models.LostItem(
             title=payload.title,
             description=payload.description,
-            category=_resolve_category_name(db, payload.category, None, required=True),
+            category_id=category.id,
             user_id=current_user.id,
             location=payload.location,
             date_lost=payload.date_lost,
-            image_url=image_url,
         )
         db.add(item)
         db.commit()
@@ -138,14 +119,7 @@ def get_lost_item(
 @router.put("/{item_id}", response_model=schemas.LostItemOut)
 async def update_lost_item(
     item_id: str,
-    title: Optional[str] = Form(None),
-    description: Optional[str] = Form(None),
-    category: Optional[str] = Form(None),
-    category_id: Optional[str] = Form(None),
-    location: Optional[str] = Form(None),
-    status: Optional[str] = Form(None),
-    date_lost: Optional[date] = Form(None),
-    image: Optional[UploadFile] = File(None),
+    payload: schemas.LostItemUpdate,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
@@ -155,22 +129,18 @@ async def update_lost_item(
     if item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    if title:
-        item.title = title
-    if description is not None:
-        item.description = description
-    if category is not None or category_id is not None:
-        item.category = _resolve_category_name(db, category, category_id, required=True)
-    if location is not None:
-        item.location = location
-    if status:
-        item.status = status
-    if date_lost:
-        item.date_lost = date_lost
-    if image and image.filename:
-        if item.image_url:
-            delete_upload_file(item.image_url)
-        item.image_url = await save_upload_file(image)
+    if payload.title is not None:
+        item.title = payload.title
+    if payload.description is not None:
+        item.description = payload.description
+    if payload.category_id is not None:
+        item.category_id = _get_category_or_404(db, payload.category_id).id
+    if payload.location is not None:
+        item.location = payload.location
+    if payload.status is not None:
+        item.status = payload.status
+    if payload.date_lost is not None:
+        item.date_lost = payload.date_lost
 
     db.commit()
     db.refresh(item)
@@ -189,6 +159,5 @@ def delete_lost_item(
     if item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
         raise HTTPException(status_code=403, detail="Not authorized")
     if item.image_url:
-        delete_upload_file(item.image_url)
     db.delete(item)
     db.commit()

@@ -11,7 +11,7 @@ export default function ReportLost() {
   const [categoryLoading, setCategoryLoading] = useState(true)
   const [categoryError, setCategoryError] = useState('')
   const [form, setForm] = useState({
-    title: '', description: '', category: 'Others', location: '', date_lost: ''
+    title: '', description: '', category_id: '', location: '', date_lost: ''
   })
 
   useEffect(() => {
@@ -38,16 +38,17 @@ export default function ReportLost() {
     e.preventDefault()
     setLoading(true)
     try {
+      const selectedCategory = categories.find(category => category.id === form.category_id)
       const payload = {
         title: form.title?.trim(),
         description: form.description?.trim() || null,
-        category: categories.includes(form.category) ? form.category : 'Others',
+        category_id: selectedCategory?.id || '',
         location: form.location?.trim() || null,
         date_lost: form.date_lost,
       }
 
-      if (!payload.title || !payload.date_lost) {
-        addToast('Title and date lost are required', 'error')
+      if (!payload.title || !payload.date_lost || !payload.category_id) {
+        addToast('Title, category, and date lost are required', 'error')
         return
       }
 
@@ -99,14 +100,15 @@ export default function ReportLost() {
           <div>
             <label className="label">Category *</label>
             <select
-              name="category"
-              value={form.category}
+              name="category_id"
+              value={form.category_id}
               onChange={handleChange}
               className="input"
               disabled={categoryLoading}
+              required
             >
-              <option value="Others">{categoryLoading ? 'Loading categories...' : 'Select Category'}</option>
-              {categories.map(categoryName => <option key={categoryName} value={categoryName}>{categoryName}</option>)}
+              <option value="">{categoryLoading ? 'Loading categories...' : 'Select Category'}</option>
+              {categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
             </select>
           </div>
           <div>

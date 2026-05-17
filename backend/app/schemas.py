@@ -2,7 +2,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from datetime import datetime, date
 from enum import Enum
-from .category_constants import PREDEFINED_CATEGORIES, normalize_category
+from .category_constants import PREDEFINED_CATEGORIES
 
 
 # ─── Enums ────────────────────────────────────────────────────────────────────
@@ -65,39 +65,41 @@ class CategoryOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class CategoriesResponse(BaseModel):
-    categories: list[str]
-
-
 # ─── Lost Items ───────────────────────────────────────────────────────────────
 
 class LostItemCreate(BaseModel):
     title: str
     description: Optional[str] = None
-    category: str = "Others"
+    category_id: str
     location: Optional[str] = None
     date_lost: date
 
-    @field_validator("category")
+    @field_validator("category_id")
     @classmethod
-    def validate_category(cls, value: str) -> str:
-        return normalize_category(value)
+    def validate_category_id(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Category is required")
+        return cleaned
 
 
 class LostItemUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
-    category: Optional[str] = None
+    category_id: Optional[str] = None
     location: Optional[str] = None
     status: Optional[LostItemStatus] = None
     date_lost: Optional[date] = None
 
-    @field_validator("category")
+    @field_validator("category_id")
     @classmethod
-    def validate_category(cls, value: Optional[str]) -> Optional[str]:
+    def validate_category_id(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
             return value
-        return normalize_category(value)
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Category is required")
+        return cleaned
 
 
 class LostItemOut(BaseModel):
@@ -109,7 +111,7 @@ class LostItemOut(BaseModel):
     image_url: Optional[str] = None
     date_lost: date
     created_at: datetime
-    category: str
+    category: CategoryOut
     user: UserOut
     model_config = {"from_attributes": True}
 
@@ -119,30 +121,36 @@ class LostItemOut(BaseModel):
 class FoundItemCreate(BaseModel):
     title: str
     description: Optional[str] = None
-    category: str = "Others"
+    category_id: str
     location: Optional[str] = None
     date_found: date
 
-    @field_validator("category")
+    @field_validator("category_id")
     @classmethod
-    def validate_category(cls, value: str) -> str:
-        return normalize_category(value)
+    def validate_category_id(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Category is required")
+        return cleaned
 
 
 class FoundItemUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
-    category: Optional[str] = None
+    category_id: Optional[str] = None
     location: Optional[str] = None
     status: Optional[FoundItemStatus] = None
     date_found: Optional[date] = None
 
-    @field_validator("category")
+    @field_validator("category_id")
     @classmethod
-    def validate_category(cls, value: Optional[str]) -> Optional[str]:
+    def validate_category_id(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
             return value
-        return normalize_category(value)
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Category is required")
+        return cleaned
 
 
 class FoundItemOut(BaseModel):
@@ -154,7 +162,7 @@ class FoundItemOut(BaseModel):
     image_url: Optional[str] = None
     date_found: date
     created_at: datetime
-    category: str
+    category: CategoryOut
     user: UserOut
     model_config = {"from_attributes": True}
 
