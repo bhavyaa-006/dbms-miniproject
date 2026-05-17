@@ -107,50 +107,74 @@ def approve_claim(
 ):
     """Approve a claim, update item status, notify claimant."""
     import traceback
-    logger.info(f"Incoming approve request: claim_id={claim_id}, user={current_user.email}")
+    from fastapi.responses import JSONResponse
+    
+    print("================ DEBUG: APPROVE ENDPOINT ================")
     print("Approve endpoint hit")
     print("Claim ID:", claim_id)
     print("Current user:", current_user.id)
     
     try:
-        claim = db.query(models.Claim).filter(models.Claim.id == claim_id).first()
+        claim = db.query(models.Claim).filter(models.Claim.id == str(claim_id)).first()
         if not claim:
-            logger.warning(f"Claim not found: {claim_id}")
-            raise HTTPException(status_code=404, detail="Claim not found")
+            print("ERROR: Claim not found")
+            return JSONResponse(status_code=404, content={"success": False, "message": "Claim not found", "detail": "Claim not found"})
             
-        print("Claim found_item user_id:", claim.found_item.user_id)
-            
-        if claim.found_item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
-            logger.warning(f"Unauthorized approval attempt by {current_user.email} for claim {claim_id}")
-            raise HTTPException(status_code=403, detail="Not authorized to manage this claim")
-            
-        claim.status = models.ClaimStatus.APPROVED
-        claim.found_item.status = models.FoundItemStatus.CLAIMED
+        print("Fetched claim ID:", claim.id)
         
-        _create_notification(
-            db, claim.claimant_id,
-            message=f"✅ Your claim for '{claim.found_item.title}' was APPROVED! Please contact the finder to collect your item.",
-            sender_user_id=current_user.id,
+        # Verify relationships
+        if not getattr(claim, "found_item", None):
+            print("ERROR: Associated found_item is None")
+            return JSONResponse(status_code=404, content={"success": False, "message": "Associated item missing", "detail": "Associated item missing"})
+        if not getattr(claim, "claimant", None):
+            print("ERROR: Associated claimant is None")
+            return JSONResponse(status_code=404, content={"success": False, "message": "Claimant missing", "detail": "Claimant missing"})
+            
+        item = claim.found_item
+        print("Fetched item ID:", item.id)
+        print("Item owner ID:", item.user_id)
+            
+        # Verify ownership
+        if str(item.user_id) != str(current_user.id) and current_user.role != models.Role.ADMIN:
+            print(f"ERROR: Authorization failed. Item owner is {item.user_id}, current user is {current_user.id}")
+            return JSONResponse(status_code=403, content={"success": False, "message": "Not authorized to manage this claim", "detail": "Not authorized to manage this claim"})
+            
+        print("Ownership validated successfully.")
+            
+        # Update statuses
+        claim.status = models.ClaimStatus.APPROVED
+        item.status = models.FoundItemStatus.CLAIMED
+        
+        print("Statuses updated. Creating notification...")
+        
+        # Notification creation safely
+        notification = models.Notification(
+            id=str(uuid.uuid4()),
+            recipient_user_id=str(claim.claimant_id),
+            sender_user_id=str(current_user.id),
             title="Claim Approved",
             type="CLAIM_APPROVED",
-            related_claim_id=claim.id,
-            related_item_id=claim.found_item.id
+            message=f"✅ Your claim for '{item.title}' was APPROVED! Please contact the finder to collect your item.",
+            related_claim_id=str(claim.id),
+            related_item_id=str(item.id)
         )
+        db.add(notification)
+        
+        print("Committing transaction...")
         db.commit()
         db.refresh(claim)
-        logger.info(f"Claim {claim_id} successfully approved.")
+        print("Transaction committed successfully.")
+        
         return {
             "success": True,
-            "message": "Claim approved successfully"
+            "claim_id": str(claim.id),
+            "status": claim.status.value if hasattr(claim.status, 'value') else str(claim.status)
         }
-    except HTTPException:
-        raise
     except Exception as e:
-        print(str(e))
+        print("ERROR:", str(e))
         traceback.print_exc()
         db.rollback()
-        logger.error(f"DB commit error during claim approval: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error during claim approval")
+        return JSONResponse(status_code=500, content={"success": False, "message": str(e), "detail": str(e)})
 
 @router.post("/{claim_id}/reject")
 def reject_claim(
@@ -160,46 +184,70 @@ def reject_claim(
 ):
     """Reject a claim, notify claimant."""
     import traceback
-    logger.info(f"Incoming reject request: claim_id={claim_id}, user={current_user.email}")
+    from fastapi.responses import JSONResponse
+    
+    print("================ DEBUG: REJECT ENDPOINT ================")
     print("Reject endpoint hit")
     print("Claim ID:", claim_id)
     print("Current user:", current_user.id)
     
     try:
-        claim = db.query(models.Claim).filter(models.Claim.id == claim_id).first()
+        claim = db.query(models.Claim).filter(models.Claim.id == str(claim_id)).first()
         if not claim:
-            logger.warning(f"Claim not found: {claim_id}")
-            raise HTTPException(status_code=404, detail="Claim not found")
+            print("ERROR: Claim not found")
+            return JSONResponse(status_code=404, content={"success": False, "message": "Claim not found", "detail": "Claim not found"})
             
-        print("Claim found_item user_id:", claim.found_item.user_id)
+        print("Fetched claim ID:", claim.id)
+        
+        # Verify relationships safely
+        if not getattr(claim, "found_item", None):
+            print("ERROR: Associated found_item is None")
+            return JSONResponse(status_code=404, content={"success": False, "message": "Associated item missing", "detail": "Associated item missing"})
+        if not getattr(claim, "claimant", None):
+            print("ERROR: Associated claimant is None")
+            return JSONResponse(status_code=404, content={"success": False, "message": "Claimant missing", "detail": "Claimant missing"})
             
-        if claim.found_item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
-            logger.warning(f"Unauthorized rejection attempt by {current_user.email} for claim {claim_id}")
-            raise HTTPException(status_code=403, detail="Not authorized to manage this claim")
+        item = claim.found_item
+        print("Fetched item ID:", item.id)
+        print("Item owner ID:", item.user_id)
             
+        # Verify ownership
+        if str(item.user_id) != str(current_user.id) and current_user.role != models.Role.ADMIN:
+            print(f"ERROR: Authorization failed. Item owner is {item.user_id}, current user is {current_user.id}")
+            return JSONResponse(status_code=403, content={"success": False, "message": "Not authorized to manage this claim", "detail": "Not authorized to manage this claim"})
+            
+        print("Ownership validated successfully.")
+            
+        # Update statuses
         claim.status = models.ClaimStatus.REJECTED
         
-        _create_notification(
-            db, claim.claimant_id,
-            message=f"❌ Your claim for '{claim.found_item.title}' was REJECTED.",
-            sender_user_id=current_user.id,
+        print("Statuses updated. Creating notification...")
+        
+        # Notification creation safely
+        notification = models.Notification(
+            id=str(uuid.uuid4()),
+            recipient_user_id=str(claim.claimant_id),
+            sender_user_id=str(current_user.id),
             title="Claim Rejected",
             type="CLAIM_REJECTED",
-            related_claim_id=claim.id,
-            related_item_id=claim.found_item.id
+            message=f"❌ Your claim for '{item.title}' was REJECTED.",
+            related_claim_id=str(claim.id),
+            related_item_id=str(item.id)
         )
+        db.add(notification)
+        
+        print("Committing transaction...")
         db.commit()
         db.refresh(claim)
-        logger.info(f"Claim {claim_id} successfully rejected.")
+        print("Transaction committed successfully.")
+        
         return {
             "success": True,
-            "message": "Claim rejected successfully"
+            "claim_id": str(claim.id),
+            "status": claim.status.value if hasattr(claim.status, 'value') else str(claim.status)
         }
-    except HTTPException:
-        raise
     except Exception as e:
-        print(str(e))
+        print("ERROR:", str(e))
         traceback.print_exc()
         db.rollback()
-        logger.error(f"DB commit error during claim rejection: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error during claim rejection")
+        return JSONResponse(status_code=500, content={"success": False, "message": str(e), "detail": str(e)})
