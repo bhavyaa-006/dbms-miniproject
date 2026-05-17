@@ -168,9 +168,46 @@ def _ensure_notification_schema(connection):
             connection.execute(text(f"ALTER TABLE notifications ADD COLUMN {col} VARCHAR"))
 
 
+def _ensure_table_column(connection, table_name: str, column_name: str, sql_type: str):
+    inspector = inspect(connection)
+    if table_name not in inspector.get_table_names():
+        return
+    columns = {column["name"] for column in inspector.get_columns(table_name)}
+    if column_name not in columns:
+        connection.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {sql_type}"))
+
+
+def _ensure_item_schema(connection):
+    for table_name, columns in {
+        "lost_items": {
+            "location": "VARCHAR",
+            "status": "VARCHAR",
+            "image_url": "VARCHAR",
+            "date_lost": "DATE",
+            "created_at": "TIMESTAMP",
+        },
+        "found_items": {
+            "location": "VARCHAR",
+            "status": "VARCHAR",
+            "image_url": "VARCHAR",
+            "date_found": "DATE",
+            "created_at": "TIMESTAMP",
+        },
+        "claims": {
+            "status": "VARCHAR",
+            "description": "TEXT",
+            "created_at": "TIMESTAMP",
+            "updated_at": "TIMESTAMP",
+        },
+    }.items():
+        for column_name, sql_type in columns.items():
+            _ensure_table_column(connection, table_name, column_name, sql_type)
+
+
 def ensure_database_schema():
     with engine.begin() as connection:
         _seed_default_categories(connection)
+        _ensure_item_schema(connection)
         _ensure_category_foreign_key(connection, "lost_items")
         _ensure_category_foreign_key(connection, "found_items")
         _ensure_notification_schema(connection)

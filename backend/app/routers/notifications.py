@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import List
 from .. import models, schemas
 from ..dependencies import get_db, get_current_user
+from ..utils.serializers import serialize_notification
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
@@ -30,12 +32,11 @@ def get_notifications(
             .order_by(models.Notification.created_at.desc())
             .all()
         )
-        return notifications
+        return JSONResponse(status_code=200, content=[serialize_notification(notification) for notification in notifications])
     except Exception as e:
         print(f"Error fetching notifications: {str(e)}")
         import traceback
         traceback.print_exc()
-        from fastapi import HTTPException
         raise HTTPException(status_code=500, detail="Internal server error while fetching notifications")
 
 
@@ -46,21 +47,52 @@ def mark_read(
     current_user: models.User = Depends(get_current_user),
 ):
     """Mark a notification as read."""
-    notif = (
-        db.query(models.Notification)
-        .filter(
-            models.Notification.id == notif_id,
-            models.Notification.recipient_user_id == current_user.id,
+    try:
+        from sqlalchemy.orm import joinedload
+
+        notif = (
+            db.query(models.Notification)
+            .options(
+                joinedload(models.Notification.sender),
+                joinedload(models.Notification.related_claim).joinedload(models.Claim.found_item).joinedload(models.FoundItem.user),
+                joinedload(models.Notification.related_claim).joinedload(models.Claim.claimant),
+                joinedload(models.Notification.related_claim).joinedload(models.Claim.found_item).joinedload(models.FoundItem.category),
+                joinedload(models.Notification.related_item).joinedload(models.FoundItem.user),
+                joinedload(models.Notification.related_item).joinedload(models.FoundItem.category),
+            )
+            .filter(
+                models.Notification.id == notif_id,
+                models.Notification.recipient_user_id == current_user.id,
+            )
+            .first()
         )
-        .first()
-    )
-    if not notif:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Notification not found")
-    notif.is_read = True
-    db.commit()
-    db.refresh(notif)
-    return notif
+        if not notif:
+            raise HTTPException(status_code=404, detail="Notification not found")
+        notif.is_read = True
+        db.commit()
+        notif = (
+            db.query(models.Notification)
+            .options(
+                joinedload(models.Notification.sender),
+                joinedload(models.Notification.related_claim).joinedload(models.Claim.found_item).joinedload(models.FoundItem.user),
+                joinedload(models.Notification.related_claim).joinedload(models.Claim.claimant),
+                joinedload(models.Notification.related_claim).joinedload(models.Claim.found_item).joinedload(models.FoundItem.category),
+                joinedload(models.Notification.related_item).joinedload(models.FoundItem.user),
+                joinedload(models.Notification.related_item).joinedload(models.FoundItem.category),
+            )
+            .filter(models.Notification.id == notif_id)
+            .first()
+        )
+        return JSONResponse(status_code=200, content=serialize_notification(notif))
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as exc:
+        db.rollback()
+        import traceback
+        print(f"Error marking notification read: {str(exc)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal server error while updating notification")
 
 
 @router.put("/read-all", response_model=dict)

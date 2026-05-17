@@ -4,6 +4,7 @@ import { useToast } from '../context/ToastContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 import PageState from '../components/PageState'
 import { Bell, CheckCheck, CheckCircle, XCircle } from 'lucide-react'
+import { getApiErrorMessage } from '../services/itemService'
 
 export default function Notifications() {
   const { addToast } = useToast()
@@ -16,8 +17,8 @@ export default function Notifications() {
     setLoading(true)
     setError('')
     getNotifications()
-      .then(res => setNotifs(res.data))
-      .catch(err => setError(err.response?.data?.detail || 'Failed to load notifications'))
+      .then(res => setNotifs(Array.isArray(res.data) ? res.data : []))
+      .catch(err => setError(getApiErrorMessage(err) || 'Failed to load notifications'))
       .finally(() => setLoading(false))
   }
 
@@ -62,7 +63,7 @@ export default function Notifications() {
       addToast('Claim approved successfully', 'success')
       fetchNotifs()
     } catch (err) {
-      addToast(err.response?.data?.detail || 'Action failed', 'error')
+      addToast(getApiErrorMessage(err) || 'Action failed', 'error')
     } finally {
       setUpdating(null)
     }
@@ -77,7 +78,7 @@ export default function Notifications() {
       addToast('Claim rejected successfully', 'success')
       fetchNotifs()
     } catch (err) {
-      addToast(err.response?.data?.detail || 'Action failed', 'error')
+      addToast(getApiErrorMessage(err) || 'Action failed', 'error')
     } finally {
       setUpdating(null)
     }

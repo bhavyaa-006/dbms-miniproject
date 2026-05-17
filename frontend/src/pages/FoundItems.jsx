@@ -10,6 +10,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import PageState from '../components/PageState'
 import { Link } from 'react-router-dom'
 import { Plus } from 'lucide-react'
+import { getApiErrorMessage } from '../services/itemService'
 
 const STATUS_OPTIONS = ['AVAILABLE', 'CLAIM_PENDING', 'CLAIMED', 'RETURNED']
 
@@ -37,13 +38,13 @@ export default function FoundItems() {
       if (user) {
         try {
           const claimsRes = await getAllClaims()
-          setClaims(claimsRes.data)
+          setClaims(Array.isArray(claimsRes.data) ? claimsRes.data : [])
         } catch (e) {
           // Ignore claims fetch error if it's just unavailable
         }
       }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to load found items')
+      setError(getApiErrorMessage(err) || 'Failed to load found items')
       setItems([])
     } finally {
       setLoading(false)
@@ -70,8 +71,8 @@ export default function FoundItems() {
       await deleteFoundItem(id)
       addToast('Report deleted', 'success')
       fetchItems()
-    } catch {
-      addToast('Failed to delete', 'error')
+    } catch (err) {
+      addToast(getApiErrorMessage(err) || 'Failed to delete', 'error')
     }
   }
 
@@ -82,7 +83,7 @@ export default function FoundItems() {
       addToast('Claim approved successfully', 'success')
       fetchItems()
     } catch (err) {
-      addToast(err.response?.data?.detail || 'Action failed', 'error')
+      addToast(getApiErrorMessage(err) || 'Action failed', 'error')
     } finally {
       setUpdatingClaim(null)
     }
@@ -95,7 +96,7 @@ export default function FoundItems() {
       addToast('Claim rejected successfully', 'success')
       fetchItems()
     } catch (err) {
-      addToast(err.response?.data?.detail || 'Action failed', 'error')
+      addToast(getApiErrorMessage(err) || 'Action failed', 'error')
     } finally {
       setUpdatingClaim(null)
     }

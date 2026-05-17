@@ -8,6 +8,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import PageState from '../components/PageState'
 import { Link } from 'react-router-dom'
 import { Plus, Search } from 'lucide-react'
+import { getApiErrorMessage } from '../services/itemService'
 
 const STATUS_OPTIONS = ['LOST', 'FOUND', 'CLOSED']
 
@@ -30,7 +31,7 @@ export default function LostItems() {
       const res = await getLostItems({ search: search || undefined, category_id: categoryId || undefined, status: status || undefined })
       setItems(Array.isArray(res.data) ? res.data : [])
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to load lost items')
+      setError(getApiErrorMessage(err) || 'Failed to load lost items')
       setItems([])
     } finally {
       setLoading(false)
@@ -57,8 +58,8 @@ export default function LostItems() {
       await deleteLostItem(id)
       addToast('Report deleted', 'success')
       fetchItems()
-    } catch {
-      addToast('Failed to delete', 'error')
+    } catch (err) {
+      addToast(getApiErrorMessage(err) || 'Failed to delete', 'error')
     }
   }
 

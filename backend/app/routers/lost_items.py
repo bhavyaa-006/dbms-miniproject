@@ -2,11 +2,12 @@ import traceback
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from .. import models, schemas
 from ..dependencies import get_db, get_current_user
 from ..utils.file_upload import delete_upload_file
+from ..utils.serializers import serialize_lost_item
 import logging
 
 logger = logging.getLogger(__name__)
@@ -29,45 +30,6 @@ def _log_loaded_item(prefix: str, item: models.LostItem) -> None:
     )
 
 
-def serialize_lost_item(item):
-    if not item:
-        return None
-
-    try:
-        category = getattr(item, "category", None)
-        user = getattr(item, "user", None)
-        claims = getattr(item, "claims", None) if hasattr(item, "claims") else None
-
-        return {
-            "id": str(item.id) if getattr(item, "id", None) else None,
-            "title": item.title,
-            "description": item.description,
-            "location": item.location,
-            "date_lost": item.date_lost.isoformat() if getattr(item, "date_lost", None) else None,
-            "time_lost": item.time_lost.isoformat() if getattr(item, "time_lost", None) else None,
-            "status": item.status.value if hasattr(item.status, "value") else str(item.status) if item.status else None,
-            "image_url": item.image_url,
-            "created_at": item.created_at.isoformat() if getattr(item, "created_at", None) else None,
-            "updated_at": item.updated_at.isoformat() if getattr(item, "updated_at", None) else None,
-            "user_id": str(item.user_id) if item.user_id else None,
-            "category_id": str(item.category_id) if getattr(item, "category_id", None) else None,
-            "category": {
-                "id": str(category.id) if getattr(category, "id", None) else "",
-                "name": getattr(category, "name", "")
-            } if category else None,
-            "user": {
-                "id": str(user.id) if getattr(user, "id", None) else "",
-                "name": getattr(user, "name", ""),
-                "email": getattr(user, "email", "")
-            } if user else None,
-            "claims_count": len(claims) if claims is not None else 0,
-        }
-    except Exception as exc:
-        print(f"Lost item serialization failed for item_id={getattr(item, 'id', None)}: {str(exc)}")
-        traceback.print_exc()
-        raise
-
-
 def _get_category_or_404(db: Session, category_id) -> models.Category:
     category = db.query(models.Category).filter(models.Category.id == str(category_id)).first()
     if not category:
@@ -87,10 +49,7 @@ def list_lost_items(
     try:
         q = db.query(models.LostItem).options(
             joinedload(models.LostItem.category),
-            joinedload(models.LostItem.user)
-            .selectinload(models.User.claims),
-            joinedload(models.LostItem.user)
-            .selectinload(models.User.notifications),
+            joinedload(models.LostItem.user),
         )
         if search:
             q = q.filter(models.LostItem.title.ilike(f"%{search}%"))
@@ -137,10 +96,7 @@ async def create_lost_item(
             db.query(models.LostItem)
             .options(
                 joinedload(models.LostItem.category),
-                joinedload(models.LostItem.user)
-                .selectinload(models.User.claims),
-                joinedload(models.LostItem.user)
-                .selectinload(models.User.notifications),
+                joinedload(models.LostItem.user),
             )
             .filter(models.LostItem.id == item.id)
             .first()
@@ -171,10 +127,7 @@ def my_lost_items(
             db.query(models.LostItem)
             .options(
                 joinedload(models.LostItem.category),
-                joinedload(models.LostItem.user)
-                .selectinload(models.User.claims),
-                joinedload(models.LostItem.user)
-                .selectinload(models.User.notifications),
+                joinedload(models.LostItem.user),
             )
             .filter(models.LostItem.user_id == current_user.id)
             .order_by(models.LostItem.created_at.desc())
@@ -202,10 +155,7 @@ def get_lost_item(
             db.query(models.LostItem)
             .options(
                 joinedload(models.LostItem.category),
-                joinedload(models.LostItem.user)
-                .selectinload(models.User.claims),
-                joinedload(models.LostItem.user)
-                .selectinload(models.User.notifications),
+                joinedload(models.LostItem.user),
             )
             .filter(models.LostItem.id == item_id)
             .first()
@@ -235,10 +185,7 @@ async def update_lost_item(
             db.query(models.LostItem)
             .options(
                 joinedload(models.LostItem.category),
-                joinedload(models.LostItem.user)
-                .selectinload(models.User.claims),
-                joinedload(models.LostItem.user)
-                .selectinload(models.User.notifications),
+                joinedload(models.LostItem.user),
             )
             .filter(models.LostItem.id == item_id)
             .first()

@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import date
 from .. import models, schemas
 from ..dependencies import get_db, get_current_user
 from ..utils.file_upload import save_upload_file, delete_upload_file
+from ..utils.serializers import serialize_found_item
 import logging
 
 logger = logging.getLogger(__name__)
@@ -29,14 +30,24 @@ def list_found_items(
     _: models.User = Depends(get_current_user),
 ):
     """List all found items with optional search/filter."""
-    q = db.query(models.FoundItem)
-    if search:
-        q = q.filter(models.FoundItem.title.ilike(f"%{search}%"))
-    if category_id:
-        q = q.filter(models.FoundItem.category_id == category_id)
-    if status:
-        q = q.filter(models.FoundItem.status == status)
-    return q.order_by(models.FoundItem.created_at.desc()).all()
+    try:
+        q = db.query(models.FoundItem).options(
+            joinedload(models.FoundItem.category),
+            joinedload(models.FoundItem.user),
+            joinedload(models.FoundItem.claims),
+        )
+        if search:
+            q = q.filter(models.FoundItem.title.ilike(f"%{search}%"))
+        if category_id:
+            q = q.filter(models.FoundItem.category_id == category_id)
+        if status:
+            q = q.filter(models.FoundItem.status == status)
+        items = q.order_by(models.FoundItem.created_at.desc()).all()
+        return JSONResponse(status_code=200, content=[serialize_found_item(item) for item in items])
+    except Exception as exc:
+        db.rollback()
+        logger.exception("Failed to list found items")
+        return JSONResponse(status_code=500, content={"success": False, "message": str(exc)})
 
 
 @router.post("", response_model=schemas.FoundItemOut, status_code=201)
@@ -69,8 +80,17 @@ async def create_found_item(
         )
         db.add(item)
         db.commit()
-        db.refresh(item)
-        return item
+        item = (
+            db.query(models.FoundItem)
+            .options(
+                joinedload(models.FoundItem.category),
+                joinedload(models.FoundItem.user),
+                joinedload(models.FoundItem.claims),
+            )
+            .filter(models.FoundItem.id == item.id)
+            .first()
+        )
+        return JSONResponse(status_code=201, content=serialize_found_item(item))
     except Exception as exc:
         db.rollback()
         logger.exception("Failed to create found item title=%s user_id=%s", title, current_user.id)
@@ -85,12 +105,23 @@ def my_found_items(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    return (
-        db.query(models.FoundItem)
-        .filter(models.FoundItem.user_id == current_user.id)
-        .order_by(models.FoundItem.created_at.desc())
-        .all()
-    )
+    try:
+        items = (
+            db.query(models.FoundItem)
+            .options(
+                joinedload(models.FoundItem.category),
+                joinedload(models.FoundItem.user),
+                joinedload(models.FoundItem.claims),
+            )
+            .filter(models.FoundItem.user_id == current_user.id)
+            .order_by(models.FoundItem.created_at.desc())
+            .all()
+        )
+        return JSONResponse(status_code=200, content=[serialize_found_item(item) for item in items])
+    except Exception as exc:
+        db.rollback()
+        logger.exception("Failed to list my found items")
+        return JSONResponse(status_code=500, content={"success": False, "message": str(exc)})
 
 
 @router.get("/{item_id}", response_model=schemas.FoundItemOut)
@@ -99,10 +130,26 @@ def get_found_item(
     db: Session = Depends(get_db),
     _: models.User = Depends(get_current_user),
 ):
-    item = db.query(models.FoundItem).filter(models.FoundItem.id == item_id).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="Found item not found")
-    return item
+    try:
+        item = (
+            db.query(models.FoundItem)
+            .options(
+                joinedload(models.FoundItem.category),
+                joinedload(models.FoundItem.user),
+                joinedload(models.FoundItem.claims),
+            )
+            .filter(models.FoundItem.id == item_id)
+            .first()
+        )
+        if not item:
+            raise HTTPException(status_code=404, detail="Found item not found")
+        return JSONResponse(status_code=200, content=serialize_found_item(item))
+    except HTTPException:
+        raise
+    except Exception as exc:
+        db.rollback()
+        logger.exception("Failed to fetch found item %s", item_id)
+        return JSONResponse(status_code=500, content={"success": False, "message": str(exc)})
 
 
 @router.put("/{item_id}", response_model=schemas.FoundItemOut)
@@ -118,32 +165,49 @@ async def update_found_item(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    item = db.query(models.FoundItem).filter(models.FoundItem.id == item_id).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="Found item not found")
-    if item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
-        raise HTTPException(status_code=403, detail="Not authorized")
+    try:
+        item = db.query(models.FoundItem).filter(models.FoundItem.id == item_id).first()
+        if not item:
+            raise HTTPException(status_code=404, detail="Found item not found")
+        if item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
+            raise HTTPException(status_code=403, detail="Not authorized")
 
-    if title:
-        item.title = title
-    if description is not None:
-        item.description = description
-    if category_id is not None:
-        item.category_id = _get_category_or_404(db, category_id).id
-    if location is not None:
-        item.location = location
-    if status:
-        item.status = status
-    if date_found:
-        item.date_found = date_found
-    if image and image.filename:
-        if item.image_url:
-            delete_upload_file(item.image_url)
-        item.image_url = await save_upload_file(image)
+        if title:
+            item.title = title
+        if description is not None:
+            item.description = description
+        if category_id is not None:
+            item.category_id = _get_category_or_404(db, category_id).id
+        if location is not None:
+            item.location = location
+        if status:
+            item.status = status
+        if date_found:
+            item.date_found = date_found
+        if image and image.filename:
+            if item.image_url:
+                delete_upload_file(item.image_url)
+            item.image_url = await save_upload_file(image)
 
-    db.commit()
-    db.refresh(item)
-    return item
+        db.commit()
+        item = (
+            db.query(models.FoundItem)
+            .options(
+                joinedload(models.FoundItem.category),
+                joinedload(models.FoundItem.user),
+                joinedload(models.FoundItem.claims),
+            )
+            .filter(models.FoundItem.id == item_id)
+            .first()
+        )
+        return JSONResponse(status_code=200, content=serialize_found_item(item))
+    except HTTPException as exc:
+        db.rollback()
+        raise exc
+    except Exception as exc:
+        db.rollback()
+        logger.exception("Failed to update found item %s", item_id)
+        return JSONResponse(status_code=500, content={"success": False, "message": str(exc)})
 
 
 @router.delete("/{item_id}", status_code=204)
@@ -152,15 +216,23 @@ def delete_found_item(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    item = db.query(models.FoundItem).filter(models.FoundItem.id == item_id).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="Found item not found")
-    if item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
-        raise HTTPException(status_code=403, detail="Not authorized")
-        
-    if item.status in [models.FoundItemStatus.CLAIMED, models.FoundItemStatus.RETURNED]:
-        raise HTTPException(status_code=400, detail="Resolved items cannot be deleted")
-    if item.image_url:
-        delete_upload_file(item.image_url)
-    db.delete(item)
-    db.commit()
+    try:
+        item = db.query(models.FoundItem).filter(models.FoundItem.id == item_id).first()
+        if not item:
+            raise HTTPException(status_code=404, detail="Found item not found")
+        if item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
+            raise HTTPException(status_code=403, detail="Not authorized")
+
+        if item.status in [models.FoundItemStatus.CLAIMED, models.FoundItemStatus.RETURNED]:
+            raise HTTPException(status_code=400, detail="Resolved items cannot be deleted")
+        if item.image_url:
+            delete_upload_file(item.image_url)
+        db.delete(item)
+        db.commit()
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as exc:
+        db.rollback()
+        logger.exception("Failed to delete found item %s", item_id)
+        return JSONResponse(status_code=500, content={"success": False, "message": str(exc)})
