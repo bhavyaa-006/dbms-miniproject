@@ -1,4 +1,5 @@
 import uuid
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
@@ -7,6 +8,7 @@ from .. import models, schemas
 from ..dependencies import get_db, get_current_user, admin_only
 
 router = APIRouter(prefix="/claims", tags=["Claims"])
+logger = logging.getLogger(__name__)
 
 
 def _create_notification(db: Session, recipient_user_id: str, message: str, **kwargs):
@@ -104,30 +106,40 @@ def approve_claim(
     current_user: models.User = Depends(get_current_user),
 ):
     """Approve a claim, update item status, notify claimant."""
+    logger.info(f"Incoming approve request: claim_id={claim_id}, user={current_user.email}")
     claim = db.query(models.Claim).filter(models.Claim.id == claim_id).first()
     if not claim:
+        logger.warning(f"Claim not found: {claim_id}")
         raise HTTPException(status_code=404, detail="Claim not found")
+        
     if claim.found_item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
+        logger.warning(f"Unauthorized approval attempt by {current_user.email} for claim {claim_id}")
         raise HTTPException(status_code=403, detail="Not authorized to manage this claim")
         
-    claim.status = models.ClaimStatus.APPROVED
-    claim.found_item.status = models.FoundItemStatus.CLAIMED
-    
-    _create_notification(
-        db, claim.claimant_id,
-        message=f"✅ Your claim for '{claim.found_item.title}' was APPROVED! Please contact the finder to collect your item.",
-        sender_user_id=current_user.id,
-        title="Claim Approved",
-        type="CLAIM_APPROVED",
-        related_claim_id=claim.id,
-        related_item_id=claim.found_item.id
-    )
-    db.commit()
-    db.refresh(claim)
-    return {
-        "success": True,
-        "message": "Claim approved"
-    }
+    try:
+        claim.status = models.ClaimStatus.APPROVED
+        claim.found_item.status = models.FoundItemStatus.CLAIMED
+        
+        _create_notification(
+            db, claim.claimant_id,
+            message=f"✅ Your claim for '{claim.found_item.title}' was APPROVED! Please contact the finder to collect your item.",
+            sender_user_id=current_user.id,
+            title="Claim Approved",
+            type="CLAIM_APPROVED",
+            related_claim_id=claim.id,
+            related_item_id=claim.found_item.id
+        )
+        db.commit()
+        db.refresh(claim)
+        logger.info(f"Claim {claim_id} successfully approved.")
+        return {
+            "success": True,
+            "message": "Claim approved"
+        }
+    except Exception as e:
+        db.rollback()
+        logger.error(f"DB commit error during claim approval: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error during claim approval")
 
 @router.post("/{claim_id}/reject")
 def reject_claim(
@@ -136,26 +148,36 @@ def reject_claim(
     current_user: models.User = Depends(get_current_user),
 ):
     """Reject a claim, notify claimant."""
+    logger.info(f"Incoming reject request: claim_id={claim_id}, user={current_user.email}")
     claim = db.query(models.Claim).filter(models.Claim.id == claim_id).first()
     if not claim:
+        logger.warning(f"Claim not found: {claim_id}")
         raise HTTPException(status_code=404, detail="Claim not found")
+        
     if claim.found_item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
+        logger.warning(f"Unauthorized rejection attempt by {current_user.email} for claim {claim_id}")
         raise HTTPException(status_code=403, detail="Not authorized to manage this claim")
         
-    claim.status = models.ClaimStatus.REJECTED
-    
-    _create_notification(
-        db, claim.claimant_id,
-        message=f"❌ Your claim for '{claim.found_item.title}' was REJECTED.",
-        sender_user_id=current_user.id,
-        title="Claim Rejected",
-        type="CLAIM_REJECTED",
-        related_claim_id=claim.id,
-        related_item_id=claim.found_item.id
-    )
-    db.commit()
-    db.refresh(claim)
-    return {
-        "success": True,
-        "message": "Claim rejected"
-    }
+    try:
+        claim.status = models.ClaimStatus.REJECTED
+        
+        _create_notification(
+            db, claim.claimant_id,
+            message=f"❌ Your claim for '{claim.found_item.title}' was REJECTED.",
+            sender_user_id=current_user.id,
+            title="Claim Rejected",
+            type="CLAIM_REJECTED",
+            related_claim_id=claim.id,
+            related_item_id=claim.found_item.id
+        )
+        db.commit()
+        db.refresh(claim)
+        logger.info(f"Claim {claim_id} successfully rejected.")
+        return {
+            "success": True,
+            "message": "Claim rejected"
+        }
+    except Exception as e:
+        db.rollback()
+        logger.error(f"DB commit error during claim rejection: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error during claim rejection")
