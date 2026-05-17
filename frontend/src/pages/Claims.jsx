@@ -3,6 +3,7 @@ import { getAllClaims, updateClaimStatus } from '../services/claimService'
 import { useToast } from '../context/ToastContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 import StatusBadge from '../components/StatusBadge'
+import PageState from '../components/PageState'
 import { CheckCircle, XCircle, MapPin, Calendar } from 'lucide-react'
 
 export default function Claims() {
@@ -10,10 +11,19 @@ export default function Claims() {
   const [claims, setClaims] = useState([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(null)
+  const [error, setError] = useState('')
 
-  const fetchClaims = () => {
+  const fetchClaims = async () => {
     setLoading(true)
-    getAllClaims().then(res => setClaims(res.data)).finally(() => setLoading(false))
+    setError('')
+    try {
+      const res = await getAllClaims()
+      setClaims(res.data)
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to load claims')
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => { fetchClaims() }, [])
@@ -33,6 +43,19 @@ export default function Claims() {
 
   if (loading) return <LoadingSpinner />
 
+  if (error) {
+    return (
+      <PageState
+        icon={ClipboardList}
+        tone="error"
+        title="Claims unavailable"
+        description={error}
+        actionLabel="Retry"
+        onAction={fetchClaims}
+      />
+    )
+  }
+
   return (
     <div className="space-y-5 max-w-4xl">
       <div>
@@ -41,11 +64,7 @@ export default function Claims() {
       </div>
 
       {claims.length === 0
-        ? (
-          <div className="card text-center py-12 text-zinc-500">
-            <p className="text-3xl mb-2">📋</p><p className="text-sm">No claims yet</p>
-          </div>
-        )
+        ? <PageState icon={ClipboardList} title="No claims submitted yet" description="Claims will appear here after users submit them." />
         : claims.map(claim => (
           <div key={claim.id} className="card space-y-3">
             <div className="flex items-start justify-between gap-3">

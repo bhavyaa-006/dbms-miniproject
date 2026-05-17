@@ -40,13 +40,13 @@ export default function Login() {
           <label className="label">Email</label>
           <input id="login-email" name="email" type="email" required
             value={form.email} onChange={handleChange}
-            placeholder="you@campus.edu" className="input" />
+            placeholder="Email address" className="input" />
         </div>
         <div>
           <label className="label">Password</label>
           <input id="login-password" name="password" type="password" required
             value={form.password} onChange={handleChange}
-            placeholder="••••••••" className="input" />
+            placeholder="Password" className="input" />
         </div>
         <button id="login-submit" type="submit" disabled={loading} className="btn-primary w-full">
           {loading ? 'Signing in...' : 'Sign in'}

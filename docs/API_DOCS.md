@@ -21,7 +21,7 @@ Register a new student account.
 
 **Body:**
 ```json
-{ "name": "Alice", "email": "alice@campus.edu", "password": "alice123" }
+{ "name": "Your Name", "email": "name@example.com", "password": "password123" }
 ```
 **Response:** `201` — `{ access_token, token_type, user }`
 
@@ -32,7 +32,7 @@ Login and receive a JWT.
 
 **Body:**
 ```json
-{ "email": "alice@campus.edu", "password": "alice123" }
+{ "email": "name@example.com", "password": "password123" }
 ```
 **Response:** `200` — `{ access_token, token_type, user }`
 
@@ -156,10 +156,10 @@ Get summary statistics.
 **Response:**
 ```json
 {
-  "total_lost": 12,
-  "total_found": 8,
-  "pending_claims": 3,
-  "resolved_items": 5
+  "total_lost": 0,
+  "total_found": 0,
+  "pending_claims": 0,
+  "resolved_items": 0
 }
 ```
 

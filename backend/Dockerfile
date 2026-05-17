@@ -21,9 +21,9 @@ RUN mkdir -p uploads
 
 # Copy the startup script and make it executable
 COPY start.sh .
-RUN chmod +x start.sh
+RUN sed -i 's/\r$//' start.sh && chmod +x start.sh
 
 EXPOSE 8000
 
 # Run the startup script
-CMD ["./start.sh"]
+CMD ["sh", "./start.sh"]

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCategories, createLostItem } from '../services/itemService'
 import { useToast } from '../context/ToastContext'
+import PageState from '../components/PageState'
 import { Upload } from 'lucide-react'
 
 export default function ReportLost() {
@@ -9,13 +10,31 @@ export default function ReportLost() {
   const { addToast } = useToast()
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(false)
+  const [categoryLoading, setCategoryLoading] = useState(true)
+  const [categoryError, setCategoryError] = useState('')
+  const categoryUnavailable = !categoryLoading && !categoryError && categories.length === 0
   const [form, setForm] = useState({
     title: '', description: '', category_id: '', location: '', date_lost: ''
   })
   const [image, setImage] = useState(null)
   const [preview, setPreview] = useState(null)
 
-  useEffect(() => { getCategories().then(res => setCategories(res.data)) }, [])
+  useEffect(() => {
+    const loadCategories = async () => {
+      setCategoryLoading(true)
+      setCategoryError('')
+      try {
+        const res = await getCategories()
+        setCategories(res.data)
+      } catch (err) {
+        setCategoryError(err.response?.data?.detail || 'Failed to load categories')
+      } finally {
+        setCategoryLoading(false)
+      }
+    }
+
+    loadCategories()
+  }, [])
 
   const handleChange = e => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
 
@@ -29,6 +48,10 @@ export default function ReportLost() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (categoryLoading || categoryError || categoryUnavailable) {
+      addToast('Categories are not available right now', 'error')
+      return
+    }
     setLoading(true)
     const fd = new FormData()
     Object.entries(form).forEach(([k, v]) => { if (v) fd.append(k, v) })
@@ -52,23 +75,38 @@ export default function ReportLost() {
       </div>
 
       <form onSubmit={handleSubmit} className="card space-y-4">
+        {categoryUnavailable && (
+          <PageState
+            compact
+            icon={Upload}
+            title="No categories available"
+            description="Create reference categories before submitting a lost item report."
+          />
+        )}
+
+        {categoryError && (
+          <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-300">
+            {categoryError}
+          </div>
+        )}
+
         <div>
           <label className="label">Item Title *</label>
           <input name="title" required value={form.title} onChange={handleChange}
-            placeholder="e.g. Black iPhone 14" className="input" />
+            placeholder="Item title" className="input" />
         </div>
 
         <div>
           <label className="label">Description</label>
           <textarea name="description" rows={3} value={form.description} onChange={handleChange}
-            placeholder="Describe the item — color, brand, identifying marks..." className="input resize-none text-sm" />
+            placeholder="Describe the item" className="input resize-none text-sm" />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="label">Category *</label>
-            <select name="category_id" required value={form.category_id} onChange={handleChange} className="input">
-              <option value="">Select...</option>
+            <select name="category_id" required value={form.category_id} onChange={handleChange} className="input" disabled={categoryLoading || !!categoryError || categoryUnavailable}>
+              <option value="">{categoryLoading ? 'Loading categories...' : 'Select a category'}</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
@@ -81,7 +119,7 @@ export default function ReportLost() {
         <div>
           <label className="label">Location</label>
           <input name="location" value={form.location} onChange={handleChange}
-            placeholder="e.g. Central Library, Block C" className="input" />
+            placeholder="Where did you lose it?" className="input" />
         </div>
 
         <div>
@@ -98,7 +136,7 @@ export default function ReportLost() {
 
         <div className="flex gap-3 pt-1">
           <button type="button" onClick={() => navigate(-1)} className="btn-secondary flex-1">Cancel</button>
-          <button type="submit" disabled={loading} className="btn-primary flex-1">
+          <button type="submit" disabled={loading || categoryUnavailable} className="btn-primary flex-1">
             {loading ? 'Submitting...' : 'Submit Report'}
           </button>
         </div>

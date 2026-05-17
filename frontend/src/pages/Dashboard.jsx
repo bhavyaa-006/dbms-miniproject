@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { getDashboardStats, getLostItems, getFoundItems } from '../services/itemService'
 import LoadingSpinner from '../components/LoadingSpinner'
 import StatusBadge from '../components/StatusBadge'
+import PageState from '../components/PageState'
 import { Search, PackageSearch, ClipboardList, CheckCircle, Plus, ArrowRight } from 'lucide-react'
 
 function StatCard({ icon: Icon, label, value, color }) {
@@ -25,19 +26,44 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null)
   const [recent, setRecent] = useState({ lost: [], found: [] })
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  useEffect(() => {
-    Promise.all([
-      getDashboardStats(),
-      getLostItems(),
-      getFoundItems(),
-    ]).then(([statsRes, lostRes, foundRes]) => {
+  const fetchDashboard = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const [statsRes, lostRes, foundRes] = await Promise.all([
+        getDashboardStats(),
+        getLostItems(),
+        getFoundItems(),
+      ])
       setStats(statsRes.data)
       setRecent({ lost: lostRes.data.slice(0, 4), found: foundRes.data.slice(0, 4) })
-    }).finally(() => setLoading(false))
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to load dashboard data')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchDashboard()
   }, [])
 
   if (loading) return <LoadingSpinner />
+
+  if (error) {
+    return (
+      <PageState
+        icon={ClipboardList}
+        tone="error"
+        title="Dashboard unavailable"
+        description={error}
+        actionLabel="Retry"
+        onAction={fetchDashboard}
+      />
+    )
+  }
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -78,7 +104,14 @@ export default function Dashboard() {
             </Link>
           </div>
           {recent.lost.length === 0
-            ? <p className="text-xs text-zinc-600">No lost items yet.</p>
+            ? (
+              <PageState
+                compact
+                icon={Search}
+                title="No lost items found"
+                description="Lost item reports will appear here once users submit them."
+              />
+            )
             : recent.lost.map(item => (
               <div key={item.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                 <div>
@@ -99,7 +132,14 @@ export default function Dashboard() {
             </Link>
           </div>
           {recent.found.length === 0
-            ? <p className="text-xs text-zinc-600">No found items yet.</p>
+            ? (
+              <PageState
+                compact
+                icon={PackageSearch}
+                title="No found items reported yet"
+                description="Found item reports will appear here once they are created."
+              />
+            )
             : recent.found.map(item => (
               <div key={item.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                 <div>

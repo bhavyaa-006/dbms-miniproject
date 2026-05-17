@@ -2,10 +2,24 @@ import { useEffect, useState } from 'react'
 import { getNotifications, markRead, markAllRead } from '../services/claimService'
 import { useToast } from '../context/ToastContext'
 import LoadingSpinner from '../components/LoadingSpinner'
+import PageState from '../components/PageState'
 import { Bell, CheckCheck } from 'lucide-react'
 
 export default function Notifications() {
   const { addToast } = useToast()
+
+  if (error) {
+    return (
+      <PageState
+        icon={Bell}
+        tone="error"
+        title="Notifications unavailable"
+        description={error}
+        actionLabel="Retry"
+        onAction={fetchNotifs}
+      />
+    )
+  }
   const [notifs, setNotifs] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -55,12 +69,7 @@ export default function Notifications() {
       </div>
 
       {notifs.length === 0
-        ? (
-          <div className="card text-center py-12 text-zinc-500">
-            <Bell size={32} className="mx-auto mb-3 opacity-30" />
-            <p className="text-sm">No notifications yet</p>
-          </div>
-        )
+        ? <PageState icon={Bell} title="No notifications available" description="Updates about claims and item status changes will appear here." />
         : notifs.map(n => (
           <div
             key={n.id}

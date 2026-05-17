@@ -6,6 +6,7 @@ import SearchFilter from '../components/SearchFilter'
 import ItemCard from '../components/ItemCard'
 import ClaimModal from '../components/ClaimModal'
 import LoadingSpinner from '../components/LoadingSpinner'
+import PageState from '../components/PageState'
 import { Link } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 
@@ -21,15 +22,34 @@ export default function FoundItems() {
   const [categoryId, setCategoryId] = useState('')
   const [status, setStatus] = useState('')
   const [claimItem, setClaimItem] = useState(null)
+  const [error, setError] = useState('')
+  const [categoryError, setCategoryError] = useState('')
 
-  const fetchItems = useCallback(() => {
+  const fetchItems = useCallback(async () => {
     setLoading(true)
-    getFoundItems({ search: search || undefined, category_id: categoryId || undefined, status: status || undefined })
-      .then(res => setItems(res.data))
-      .finally(() => setLoading(false))
+    setError('')
+    try {
+      const res = await getFoundItems({ search: search || undefined, category_id: categoryId || undefined, status: status || undefined })
+      setItems(res.data)
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to load found items')
+    } finally {
+      setLoading(false)
+    }
   }, [search, categoryId, status])
 
-  useEffect(() => { getCategories().then(res => setCategories(res.data)) }, [])
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const res = await getCategories()
+        setCategories(res.data)
+      } catch (err) {
+        setCategoryError(err.response?.data?.detail || 'Failed to load categories')
+      }
+    }
+
+    loadCategories()
+  }, [])
   useEffect(() => { fetchItems() }, [fetchItems])
 
   const handleDelete = async (id) => {
@@ -62,12 +82,26 @@ export default function FoundItems() {
         categories={categories} statusOptions={STATUS_OPTIONS}
       />
 
-      {loading ? <LoadingSpinner /> : items.length === 0
+      {categoryError && (
+        <div className="card border-red-500/20 bg-red-500/5 text-red-300 text-xs">
+          {categoryError}
+        </div>
+      )}
+
+      {loading ? <LoadingSpinner /> : error
         ? (
-          <div className="card text-center py-12 text-zinc-500">
-            <p className="text-3xl mb-2">📦</p>
-            <p className="text-sm">No found items reported yet</p>
-          </div>
+          <PageState
+            icon={Plus}
+            tone="error"
+            title="Found items unavailable"
+            description={error}
+            actionLabel="Retry"
+            onAction={fetchItems}
+          />
+        )
+        : items.length === 0
+        ? (
+          <PageState icon={Plus} title="No found items reported yet" description="Found item reports will appear here when they are created." />
         )
         : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

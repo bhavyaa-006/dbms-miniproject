@@ -28,7 +28,7 @@ dbms-miniproject/
 │   │   ├── schemas.py       # Pydantic schemas
 │   │   ├── security.py      # JWT + bcrypt
 │   │   ├── dependencies.py  # Auth guards
-│   │   ├── seed.py          # Sample data seeder
+│   │   ├── seed.py          # Reference data seeder
 │   │   ├── routers/         # API route handlers
 │   │   └── utils/           # File upload helper
 │   ├── uploads/             # Uploaded images (auto-created)
@@ -106,24 +106,16 @@ uvicorn app.main:app --reload
 
 ---
 
-### Step 4 — Seed Sample Data
+### Step 4 — Seed Reference Data
 
 ```bash
 # In a new terminal (with venv active, inside backend/)
 python -m app.seed
 ```
 
-Demo accounts created:
-| Role | Email | Password |
-|---|---|---|
-| Admin | admin@campus.edu | admin123 |
-| Student | alice@campus.edu | alice123 |
-| Student | bob@campus.edu | bob123 |
-| Student | carol@campus.edu | carol123 |
-
 ---
 
-### Step 5 — Apply PostgreSQL Trigger (DBMS Concept Demo)
+### Step 5 — Apply PostgreSQL Trigger
 
 ```bash
 # Apply the trigger from psql:
@@ -154,7 +146,7 @@ npm run dev
 - **Dashboard** — Stats overview (lost, found, pending claims, reunited items)
 - **Admin Panel** — View and manage all claims
 
-## DBMS Concepts Demonstrated
+## DBMS Concepts Included
 
 - Normalization (1NF, 2NF, 3NF) — see `docs/NORMALIZATION.md`
 - ER Diagram with all relationships — see `docs/ER_DIAGRAM.md`

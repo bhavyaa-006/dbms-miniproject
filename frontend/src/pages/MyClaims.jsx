@@ -2,17 +2,45 @@ import { useEffect, useState } from 'react'
 import { getMyClaims } from '../services/claimService'
 import LoadingSpinner from '../components/LoadingSpinner'
 import StatusBadge from '../components/StatusBadge'
+import PageState from '../components/PageState'
 import { MapPin, Calendar } from 'lucide-react'
 
 export default function MyClaims() {
   const [claims, setClaims] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const fetchClaims = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await getMyClaims()
+      setClaims(res.data)
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to load your claims')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    getMyClaims().then(res => setClaims(res.data)).finally(() => setLoading(false))
+    fetchClaims()
   }, [])
 
   if (loading) return <LoadingSpinner />
+
+  if (error) {
+    return (
+      <PageState
+        icon={Calendar}
+        tone="error"
+        title="My claims unavailable"
+        description={error}
+        actionLabel="Retry"
+        onAction={fetchClaims}
+      />
+    )
+  }
 
   return (
     <div className="space-y-5 max-w-3xl">
@@ -22,13 +50,7 @@ export default function MyClaims() {
       </div>
 
       {claims.length === 0
-        ? (
-          <div className="card text-center py-12 text-zinc-500">
-            <p className="text-3xl mb-2">📋</p>
-            <p className="text-sm">You haven't submitted any claims yet.</p>
-            <p className="text-xs mt-1">Browse Found Items to claim an item.</p>
-          </div>
-        )
+        ? <PageState icon={Calendar} title="No claims submitted yet" description="Browse Found Items to submit your first claim." />
         : claims.map(claim => (
           <div key={claim.id} className="card space-y-3">
             <div className="flex items-start justify-between gap-3">

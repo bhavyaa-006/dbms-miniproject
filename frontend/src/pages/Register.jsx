@@ -44,19 +44,19 @@ export default function Register() {
           <label className="label">Full Name</label>
           <input id="reg-name" name="name" type="text" required
             value={form.name} onChange={handleChange}
-            placeholder="John Doe" className="input" />
+            placeholder="Full name" className="input" />
         </div>
         <div>
           <label className="label">Email</label>
           <input id="reg-email" name="email" type="email" required
             value={form.email} onChange={handleChange}
-            placeholder="you@campus.edu" className="input" />
+            placeholder="Email address" className="input" />
         </div>
         <div>
           <label className="label">Password</label>
           <input id="reg-password" name="password" type="password" required
             value={form.password} onChange={handleChange}
-            placeholder="Min. 6 characters" className="input" />
+            placeholder="Create a password" className="input" />
         </div>
         <button id="reg-submit" type="submit" disabled={loading} className="btn-primary w-full">
           {loading ? 'Creating account...' : 'Create account'}
