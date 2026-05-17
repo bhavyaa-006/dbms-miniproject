@@ -1,97 +1,342 @@
 # Database Normalization — Campus Lost & Found System
 
-## Overview
-
-Our database schema follows the principles of normalization up to **Third Normal Form (3NF)**.
-Normalization eliminates redundancy, prevents update anomalies, and ensures data integrity.
+This document explains the normalization process followed in the Campus Lost & Found Management System database design.  
+The database has been normalized up to Third Normal Form (3NF) to reduce redundancy, improve consistency, and maintain data integrity.
 
 ---
 
-## First Normal Form (1NF)
+# Introduction to Normalization
 
-> **Rule:** Each column must hold atomic (indivisible) values. No repeating groups.
+Normalization is the process of organizing data in a database to minimize redundancy and dependency issues.  
+It helps in:
 
-### ✅ How our schema satisfies 1NF:
+- Eliminating duplicate data
+- Improving data consistency
+- Reducing update anomalies
+- Enhancing database maintainability
+- Improving query efficiency
 
-- Every column holds a single atomic value. For example, `users.email` stores one email, not a comma-separated list.
-- There are no arrays or repeating groups in any table.
-- Each table has a primary key (`id`).
+The database schema used in this project follows:
 
-### ❌ What would violate 1NF (example):
-
-If we stored `categories` as a comma-separated value in `lost_items`:
-```
-lost_items.categories = "Electronics, Gadgets, Phone"  -- VIOLATION
-```
-Instead, we have a separate `categories` table with a foreign key reference.
-
----
-
-## Second Normal Form (2NF)
-
-> **Rule:** Must be in 1NF. Every non-key attribute must depend on the **entire** primary key (no partial dependencies).  
-> *Partial dependency only applies to composite primary keys.*
-
-### ✅ How our schema satisfies 2NF:
-
-All our tables use a **single-column UUID primary key**, so partial dependencies cannot exist by definition.
-
-Each attribute in every table depends on the full primary key:
-
-| Table | Attribute | Depends on |
-|---|---|---|
-| `lost_items` | `title`, `location`, `status` | `lost_items.id` (full PK) |
-| `claims` | `status`, `description` | `claims.id` (full PK) |
-| `notifications` | `message`, `is_read` | `notifications.id` (full PK) |
-
-### ❌ What would violate 2NF (example):
-
-If we had a composite PK `(user_id, item_id)` in `lost_items` and stored `user_name` there:
-```
--- user_name depends only on user_id, not on (user_id + item_id) — PARTIAL DEPENDENCY
-(user_id, item_id) | user_name | title | location
-```
-We avoid this by keeping `user_name` in the `users` table and referencing via FK.
+- First Normal Form (1NF)
+- Second Normal Form (2NF)
+- Third Normal Form (3NF)
 
 ---
 
-## Third Normal Form (3NF)
+# Initial Unnormalized Structure (UNF)
 
-> **Rule:** Must be in 2NF. No **transitive dependencies** — non-key attributes must not depend on other non-key attributes.
+Initially, all data could have been stored in a single table:
 
-### ✅ How our schema satisfies 3NF:
+| User Name | Email | Lost Item | Found Item | Claim Status | Notification |
+|------------|--------|------------|-------------|---------------|---------------|
+| Rahul | rahul@gmail.com | Wallet | Bottle | Pending | Claim Submitted |
 
-We extracted `category` into its own table. Consider what would happen without it:
+This structure leads to:
 
-```
--- Without 3NF (denormalized):
-lost_items: id | title | category_name | category_description | ...
-```
-Here `category_description` depends on `category_name`, not on `id` — **transitive dependency**.
+- Data redundancy
+- Repeated user information
+- Difficulty in updates
+- Insert and delete anomalies
 
-By creating a `categories` table:
-```
-categories: id | name | description
-lost_items: id | title | category_id (FK) | ...
-```
-Now `category_description` lives in `categories` and depends only on `categories.id`.
-
-### ✅ Other 3NF examples in our schema:
-
-| Removed transitive dependency | Solution |
-|---|---|
-| `user_name` in `claims` | `claims.claimant_id → users.name` via JOIN |
-| `category_name` in `lost_items` | `lost_items.category_id → categories.name` via JOIN |
-| `found_item_title` in `notifications` | Stored in message string; `found_items` joined when needed |
+Therefore, normalization was applied.
 
 ---
 
-## Summary Table
+# First Normal Form (1NF)
 
-| Normal Form | Requirement | Status |
-|---|---|---|
-| **1NF** | Atomic values, no repeating groups | ✅ |
-| **2NF** | No partial dependencies on PK | ✅ |
-| **3NF** | No transitive dependencies | ✅ |
+## Definition
 
-Our schema is fully normalized to **3NF**, which is the standard requirement for most production relational databases.
+A relation is in First Normal Form if:
+
+- All attributes contain atomic values
+- No repeating groups exist
+- Each record is unique
+
+---
+
+## Conversion to 1NF
+
+Separate tables were created for:
+
+- Users
+- Lost Items
+- Found Items
+- Claims
+- Notifications
+
+---
+
+## Users Table
+
+```sql
+CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    full_name VARCHAR(100),
+    email VARCHAR(100),
+    password_hash TEXT,
+    role VARCHAR(20)
+);
+```
+
+---
+
+## Lost Items Table
+
+```sql
+CREATE TABLE lost_items (
+    lost_id SERIAL PRIMARY KEY,
+    user_id INT,
+    item_name VARCHAR(100),
+    category VARCHAR(50),
+    description TEXT,
+    location_lost VARCHAR(100)
+);
+```
+
+---
+
+## Result of 1NF
+
+- Repeating groups removed
+- Atomic values maintained
+- Better data organization achieved
+
+---
+
+# Second Normal Form (2NF)
+
+## Definition
+
+A table is in Second Normal Form if:
+
+- It is already in 1NF
+- All non-key attributes are fully dependent on the primary key
+- No partial dependency exists
+
+---
+
+## Problem Before 2NF
+
+Suppose the following structure existed:
+
+| claim_id | claimant_name | claimant_email | found_item |
+|-----------|----------------|-----------------|-------------|
+
+Here:
+
+- claimant_name depends on claimant_id
+- claimant_email depends on claimant_id
+- Not directly dependent on claim_id
+
+This causes partial dependency.
+
+---
+
+## Conversion to 2NF
+
+Claimant details were separated into the `users` table.
+
+Claims table stores only references:
+
+```sql
+CREATE TABLE claims (
+    claim_id SERIAL PRIMARY KEY,
+    found_id INT REFERENCES found_items(found_id),
+    claimant_id INT REFERENCES users(user_id),
+    claim_status VARCHAR(20)
+);
+```
+
+---
+
+## Result of 2NF
+
+- Partial dependency removed
+- User information stored only once
+- Improved consistency
+
+---
+
+# Third Normal Form (3NF)
+
+## Definition
+
+A table is in Third Normal Form if:
+
+- It is already in 2NF
+- No transitive dependency exists
+- Non-key attributes depend only on the primary key
+
+---
+
+## Problem Before 3NF
+
+Suppose category names were repeatedly stored:
+
+| item_id | category_id | category_name |
+|----------|--------------|----------------|
+
+Here:
+
+- category_name depends on category_id
+- Not directly dependent on item_id
+
+This creates transitive dependency.
+
+---
+
+## Conversion to 3NF
+
+A separate categories table was created:
+
+```sql
+CREATE TABLE categories (
+    category_id SERIAL PRIMARY KEY,
+    category_name VARCHAR(50)
+);
+```
+
+Lost and found items reference category IDs:
+
+```sql
+CREATE TABLE found_items (
+    found_id SERIAL PRIMARY KEY,
+    category_id INT REFERENCES categories(category_id),
+    item_name VARCHAR(100)
+);
+```
+
+---
+
+## Result of 3NF
+
+- Transitive dependency removed
+- Category data centralized
+- Easier maintenance and updates
+
+---
+
+# Final Normalized Tables
+
+The final database consists of the following normalized tables:
+
+| Table Name | Purpose |
+|-------------|----------|
+| users | Stores user information |
+| lost_items | Stores lost item reports |
+| found_items | Stores found item reports |
+| claims | Stores ownership claims |
+| notifications | Stores user notifications |
+| categories | Stores item categories |
+
+---
+
+# Relationships Between Tables
+
+## Users ↔ Lost Items
+
+- One user can report many lost items
+- Relationship: One-to-Many
+
+---
+
+## Users ↔ Found Items
+
+- One user can report many found items
+- Relationship: One-to-Many
+
+---
+
+## Users ↔ Claims
+
+- One user can submit many claims
+- Relationship: One-to-Many
+
+---
+
+## Found Items ↔ Claims
+
+- One found item can have multiple claims
+- Relationship: One-to-Many
+
+---
+
+## Categories ↔ Items
+
+- One category can belong to many items
+- Relationship: One-to-Many
+
+---
+
+# Advantages of Normalization in This Project
+
+## Reduced Data Redundancy
+
+User details and category names are stored only once.
+
+---
+
+## Improved Data Consistency
+
+Updating a user email updates it everywhere automatically.
+
+---
+
+## Better Storage Efficiency
+
+Duplicate records are minimized.
+
+---
+
+## Easier Maintenance
+
+Changes can be made in one place without affecting multiple records.
+
+---
+
+## Improved Data Integrity
+
+Foreign key relationships ensure valid references between tables.
+
+---
+
+# Example of Foreign Key Usage
+
+```sql
+ALTER TABLE lost_items
+ADD CONSTRAINT fk_user
+FOREIGN KEY (user_id)
+REFERENCES users(user_id);
+```
+
+---
+
+# Example of Referential Integrity
+
+If a user is deleted:
+
+```sql
+ON DELETE CASCADE
+```
+
+Automatically removes related records.
+
+This prevents orphan records in the database.
+
+---
+
+# Conclusion
+
+The Campus Lost & Found Management System database has been normalized up to Third Normal Form (3NF).  
+Normalization helped eliminate redundancy, improve consistency, and maintain efficient relational mapping between tables.
+
+The final schema ensures:
+
+- Efficient storage
+- Better scalability
+- Reliable data integrity
+- Easier maintenance
+- Improved query performance
+
+The normalized database design makes the system robust and suitable for real-world deployment.
