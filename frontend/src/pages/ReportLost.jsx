@@ -20,7 +20,7 @@ export default function ReportLost() {
       setCategoryError('')
       try {
         const res = await getCategories()
-        setCategories(res.data)
+        setCategories(Array.isArray(res.data) ? res.data : [])
       } catch (err) {
         console.error('Failed to load categories:', err?.response?.data || err)
         setCategoryError(err.response?.data?.detail || err.response?.data?.message || 'Failed to load categories')
@@ -107,7 +107,7 @@ export default function ReportLost() {
               required
             >
               <option value="">{categoryLoading ? 'Loading categories...' : 'Select Category'}</option>
-              {categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
+              {Array.isArray(categories) && categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
             </select>
           </div>
           <div>

@@ -41,7 +41,7 @@ export default function LostItems() {
     const loadCategories = async () => {
       try {
         const res = await getCategories()
-        setCategories(res.data)
+        setCategories(Array.isArray(res.data) ? res.data : [])
       } catch (err) {
         setCategoryError(err.response?.data?.detail || 'Failed to load categories')
       }
@@ -104,7 +104,7 @@ export default function LostItems() {
         )
         : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {items.map(item => (
+            {Array.isArray(items) && items.map(item => (
               <ItemCard
                 key={item.id}
                 item={item}

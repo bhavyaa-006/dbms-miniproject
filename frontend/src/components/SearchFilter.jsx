@@ -17,7 +17,7 @@ export default function SearchFilter({ search, onSearch, categoryId, onCategory,
       </div>
 
       {/* Category filter */}
-      {categories && (
+      {Array.isArray(categories) && (
         <select
           id="category-filter"
           value={categoryId}
@@ -32,7 +32,7 @@ export default function SearchFilter({ search, onSearch, categoryId, onCategory,
       )}
 
       {/* Status filter */}
-      {statusOptions && (
+      {Array.isArray(statusOptions) && (
         <select
           id="status-filter"
           value={status}

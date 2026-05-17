@@ -1,10 +1,8 @@
 import traceback
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 from typing import List, Optional
 from .. import models, schemas
 from ..dependencies import get_db, get_current_user
@@ -16,31 +14,58 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/lost-items", tags=["Lost Items"])
 
 
+def _log_loaded_item(prefix: str, item: models.LostItem) -> None:
+    category = getattr(item, "category", None)
+    user = getattr(item, "user", None)
+    claims = getattr(item, "claims", None) if hasattr(item, "claims") else None
+    user_claims = getattr(user, "claims", None) if user is not None else None
+    user_notifications = getattr(user, "notifications", None) if user is not None else None
+    print(
+        f"{prefix} lost_item id={getattr(item, 'id', None)} status={getattr(item, 'status', None)} "
+        f"category_id={getattr(item, 'category_id', None)} user_id={getattr(item, 'user_id', None)} "
+        f"category_loaded={category is not None} user_loaded={user is not None} claims_loaded={claims is not None} "
+        f"user_claims_count={len(user_claims) if user_claims is not None else 0} "
+        f"user_notifications_count={len(user_notifications) if user_notifications is not None else 0}"
+    )
+
+
 def serialize_lost_item(item):
-    if not item: return None
-    return {
-        "id": str(item.id) if item.id else None,
-        "title": item.title,
-        "description": item.description,
-        "location": item.location,
-        "date_lost": item.date_lost.isoformat() if getattr(item, 'date_lost', None) else None,
-        "time_lost": item.time_lost.isoformat() if getattr(item, 'time_lost', None) else None,
-        "status": item.status.value if hasattr(item.status, 'value') else str(item.status) if item.status else None,
-        "image_url": item.image_url,
-        "created_at": item.created_at.isoformat() if getattr(item, 'created_at', None) else None,
-        "updated_at": item.updated_at.isoformat() if getattr(item, 'updated_at', None) else None,
-        "user_id": str(item.user_id) if item.user_id else None,
-        "category_id": str(item.category_id) if getattr(item, 'category_id', None) else None,
-        "category": {
-            "id": str(item.category.id) if getattr(item.category, 'id', None) else "",
-            "name": getattr(item.category, 'name', "")
-        } if getattr(item, 'category', None) else None,
-        "user": {
-            "id": str(item.user.id) if getattr(item.user, 'id', None) else "",
-            "name": getattr(item.user, 'name', ""),
-            "email": getattr(item.user, 'email', "")
-        } if getattr(item, 'user', None) else None
-    }
+    if not item:
+        return None
+
+    try:
+        category = getattr(item, "category", None)
+        user = getattr(item, "user", None)
+        claims = getattr(item, "claims", None) if hasattr(item, "claims") else None
+
+        return {
+            "id": str(item.id) if getattr(item, "id", None) else None,
+            "title": item.title,
+            "description": item.description,
+            "location": item.location,
+            "date_lost": item.date_lost.isoformat() if getattr(item, "date_lost", None) else None,
+            "time_lost": item.time_lost.isoformat() if getattr(item, "time_lost", None) else None,
+            "status": item.status.value if hasattr(item.status, "value") else str(item.status) if item.status else None,
+            "image_url": item.image_url,
+            "created_at": item.created_at.isoformat() if getattr(item, "created_at", None) else None,
+            "updated_at": item.updated_at.isoformat() if getattr(item, "updated_at", None) else None,
+            "user_id": str(item.user_id) if item.user_id else None,
+            "category_id": str(item.category_id) if getattr(item, "category_id", None) else None,
+            "category": {
+                "id": str(category.id) if getattr(category, "id", None) else "",
+                "name": getattr(category, "name", "")
+            } if category else None,
+            "user": {
+                "id": str(user.id) if getattr(user, "id", None) else "",
+                "name": getattr(user, "name", ""),
+                "email": getattr(user, "email", "")
+            } if user else None,
+            "claims_count": len(claims) if claims is not None else 0,
+        }
+    except Exception as exc:
+        print(f"Lost item serialization failed for item_id={getattr(item, 'id', None)}: {str(exc)}")
+        traceback.print_exc()
+        raise
 
 
 def _get_category_or_404(db: Session, category_id) -> models.Category:
@@ -60,7 +85,13 @@ def list_lost_items(
 ):
     """List all lost items with optional search/filter."""
     try:
-        q = db.query(models.LostItem)
+        q = db.query(models.LostItem).options(
+            joinedload(models.LostItem.category),
+            joinedload(models.LostItem.user)
+            .selectinload(models.User.claims),
+            joinedload(models.LostItem.user)
+            .selectinload(models.User.notifications),
+        )
         if search:
             q = q.filter(models.LostItem.title.ilike(f"%{search}%"))
         if category_id:
@@ -68,8 +99,12 @@ def list_lost_items(
         if status:
             q = q.filter(models.LostItem.status == status)
         items = q.order_by(models.LostItem.created_at.desc()).all()
+        print(f"Fetched {len(items)} lost items")
+        for item in items:
+            _log_loaded_item("LIST", item)
         return JSONResponse(status_code=200, content=[serialize_lost_item(item) for item in items])
     except Exception as exc:
+        db.rollback()
         print(f"Lost items query failed: {str(exc)}")
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"success": False, "message": "Internal server error"})
@@ -98,8 +133,26 @@ async def create_lost_item(
         )
         db.add(item)
         db.commit()
-        db.refresh(item)
+        item = (
+            db.query(models.LostItem)
+            .options(
+                joinedload(models.LostItem.category),
+                joinedload(models.LostItem.user)
+                .selectinload(models.User.claims),
+                joinedload(models.LostItem.user)
+                .selectinload(models.User.notifications),
+            )
+            .filter(models.LostItem.id == item.id)
+            .first()
+        )
+        print(f"Created lost item id={getattr(item, 'id', None)}")
+        _log_loaded_item("CREATE", item)
         return JSONResponse(status_code=201, content=serialize_lost_item(item))
+    except HTTPException as exc:
+        db.rollback()
+        print(f"Create lost item validation failed: {str(exc.detail)}")
+        traceback.print_exc()
+        return JSONResponse(status_code=exc.status_code, content={"success": False, "message": str(exc.detail), "detail": exc.detail})
     except Exception as exc:
         db.rollback()
         print(f"Create lost item error: {str(exc)}")
@@ -116,12 +169,23 @@ def my_lost_items(
     try:
         items = (
             db.query(models.LostItem)
+            .options(
+                joinedload(models.LostItem.category),
+                joinedload(models.LostItem.user)
+                .selectinload(models.User.claims),
+                joinedload(models.LostItem.user)
+                .selectinload(models.User.notifications),
+            )
             .filter(models.LostItem.user_id == current_user.id)
             .order_by(models.LostItem.created_at.desc())
             .all()
         )
+        print(f"Fetched {len(items)} my lost items for user_id={current_user.id}")
+        for item in items:
+            _log_loaded_item("MY", item)
         return JSONResponse(status_code=200, content=[serialize_lost_item(item) for item in items])
     except Exception as exc:
+        db.rollback()
         print(f"My lost items query failed: {str(exc)}")
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"success": False, "message": "Internal server error"})
@@ -134,13 +198,26 @@ def get_lost_item(
     _: models.User = Depends(get_current_user),
 ):
     try:
-        item = db.query(models.LostItem).filter(models.LostItem.id == item_id).first()
+        item = (
+            db.query(models.LostItem)
+            .options(
+                joinedload(models.LostItem.category),
+                joinedload(models.LostItem.user)
+                .selectinload(models.User.claims),
+                joinedload(models.LostItem.user)
+                .selectinload(models.User.notifications),
+            )
+            .filter(models.LostItem.id == item_id)
+            .first()
+        )
         if not item:
             raise HTTPException(status_code=404, detail="Lost item not found")
+        _log_loaded_item("GET", item)
         return JSONResponse(status_code=200, content=serialize_lost_item(item))
     except HTTPException:
         raise
     except Exception as exc:
+        db.rollback()
         print(f"Get lost item failed: {str(exc)}")
         traceback.print_exc()
         return JSONResponse(status_code=500, content={"success": False, "message": "Internal server error"})
@@ -154,7 +231,18 @@ async def update_lost_item(
     current_user: models.User = Depends(get_current_user),
 ):
     try:
-        item = db.query(models.LostItem).filter(models.LostItem.id == item_id).first()
+        item = (
+            db.query(models.LostItem)
+            .options(
+                joinedload(models.LostItem.category),
+                joinedload(models.LostItem.user)
+                .selectinload(models.User.claims),
+                joinedload(models.LostItem.user)
+                .selectinload(models.User.notifications),
+            )
+            .filter(models.LostItem.id == item_id)
+            .first()
+        )
         if not item:
             return JSONResponse(status_code=404, content={"success": False, "message": "Lost item not found"})
             
@@ -177,7 +265,19 @@ async def update_lost_item(
             item.date_lost = payload.date_lost
 
         db.commit()
-        db.refresh(item)
+        item = (
+            db.query(models.LostItem)
+            .options(
+                joinedload(models.LostItem.category),
+                joinedload(models.LostItem.user)
+                .selectinload(models.User.claims),
+                joinedload(models.LostItem.user)
+                .selectinload(models.User.notifications),
+            )
+            .filter(models.LostItem.id == item_id)
+            .first()
+        )
+        _log_loaded_item("UPDATE", item)
         return JSONResponse(status_code=200, content=serialize_lost_item(item))
     except Exception as exc:
         db.rollback()
@@ -193,7 +293,15 @@ def delete_lost_item(
     current_user: models.User = Depends(get_current_user),
 ):
     try:
-        item = db.query(models.LostItem).filter(models.LostItem.id == item_id).first()
+        item = (
+            db.query(models.LostItem)
+            .options(
+                joinedload(models.LostItem.category),
+                joinedload(models.LostItem.user),
+            )
+            .filter(models.LostItem.id == item_id)
+            .first()
+        )
         if not item:
             return JSONResponse(status_code=404, content={"success": False, "message": "Lost item not found"})
             
