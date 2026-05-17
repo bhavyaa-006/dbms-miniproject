@@ -6,6 +6,14 @@ The system allows students to report lost items, upload found item details, subm
 
 ---
 
+# Live Demo
+
+Project Deployment:
+
+https://dbms-miniproject-sigma.vercel.app/
+
+---
+
 # Problem Statement
 
 In many colleges, lost items are usually handled manually through notice boards, student groups, or word of mouth. This approach often leads to:
