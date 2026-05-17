@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from .. import models, schemas
 from ..dependencies import get_db, get_current_user
+from ..utils.file_upload import delete_upload_file
 import logging
 
 logger = logging.getLogger(__name__)
@@ -147,7 +148,7 @@ async def update_lost_item(
     return item
 
 
-@router.delete("/{item_id}", status_code=204)
+@router.delete("/{item_id}")
 def delete_lost_item(
     item_id: str,
     db: Session = Depends(get_db),
@@ -158,6 +159,14 @@ def delete_lost_item(
         raise HTTPException(status_code=404, detail="Lost item not found")
     if item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
         raise HTTPException(status_code=403, detail="Not authorized")
+        
     if item.image_url:
+        delete_upload_file(item.image_url)
+        
     db.delete(item)
     db.commit()
+    
+    return {
+        "success": True,
+        "message": "Lost item deleted successfully"
+    }
