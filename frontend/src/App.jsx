@@ -58,8 +58,8 @@ export default function App() {
                 <Route path="/report-found" element={<ReportFound />} />
                 <Route path="/my-claims"    element={<MyClaims />} />
                 <Route path="/notifications" element={<Notifications />} />
+                <Route path="/claims" element={<Claims />} />
                 {/* Admin only */}
-                <Route path="/claims" element={<AdminRoute><Claims /></AdminRoute>} />
               </Route>
 
               {/* Fallback */}

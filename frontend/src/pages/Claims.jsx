@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getAllClaims, updateClaimStatus } from '../services/claimService'
+import { getAllClaims, approveClaim, rejectClaim } from '../services/claimService'
 import { useToast } from '../context/ToastContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 import StatusBadge from '../components/StatusBadge'
@@ -28,11 +28,24 @@ export default function Claims() {
 
   useEffect(() => { fetchClaims() }, [])
 
-  const handleStatus = async (id, status) => {
+  const handleApprove = async (id) => {
     setUpdating(id)
     try {
-      await updateClaimStatus(id, { status })
-      addToast(`Claim ${status.toLowerCase()} successfully`, 'success')
+      await approveClaim(id)
+      addToast(`Claim approved successfully`, 'success')
+      fetchClaims()
+    } catch (err) {
+      addToast(err.response?.data?.detail || 'Action failed', 'error')
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  const handleReject = async (id) => {
+    setUpdating(id)
+    try {
+      await rejectClaim(id)
+      addToast(`Claim rejected successfully`, 'success')
       fetchClaims()
     } catch (err) {
       addToast(err.response?.data?.detail || 'Action failed', 'error')
@@ -98,7 +111,7 @@ export default function Claims() {
               <div className="flex gap-2 pt-1">
                 <button
                   id={`approve-${claim.id}`}
-                  onClick={() => handleStatus(claim.id, 'APPROVED')}
+                  onClick={() => handleApprove(claim.id)}
                   disabled={updating === claim.id}
                   className="flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400
                              border border-emerald-500/20 rounded-lg px-3 py-1.5 text-xs font-medium transition-all"
@@ -107,7 +120,7 @@ export default function Claims() {
                 </button>
                 <button
                   id={`reject-${claim.id}`}
-                  onClick={() => handleStatus(claim.id, 'REJECTED')}
+                  onClick={() => handleReject(claim.id)}
                   disabled={updating === claim.id}
                   className="flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400
                              border border-red-500/20 rounded-lg px-3 py-1.5 text-xs font-medium transition-all"

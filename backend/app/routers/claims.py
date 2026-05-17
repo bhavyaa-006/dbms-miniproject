@@ -9,11 +9,12 @@ from ..dependencies import get_db, get_current_user, admin_only
 router = APIRouter(prefix="/claims", tags=["Claims"])
 
 
-def _create_notification(db: Session, user_id: str, message: str):
+def _create_notification(db: Session, recipient_user_id: str, message: str, **kwargs):
     notif = models.Notification(
         id=str(uuid.uuid4()),
-        user_id=user_id,
+        recipient_user_id=recipient_user_id,
         message=message,
+        **kwargs
     )
     db.add(notif)
 
@@ -46,14 +47,21 @@ def submit_claim(
         description=payload.description,
     )
     db.add(claim)
+    db.commit()
+    db.refresh(claim)
     
     _create_notification(
-        db, found_item.user_id,
-        f"A new claim has been submitted for your found item: '{found_item.title}'"
+        db, 
+        recipient_user_id=found_item.user_id,
+        message=f"{current_user.name} submitted a claim for your item: '{found_item.title}'.\nProof: {payload.description or 'No proof provided'}",
+        sender_user_id=current_user.id,
+        title="New Claim Request",
+        type="CLAIM_REQUEST",
+        related_claim_id=claim.id,
+        related_item_id=found_item.id
     )
     
     db.commit()
-    db.refresh(claim)
     return claim
 
 
@@ -89,38 +97,59 @@ def my_claims(
     )
 
 
-@router.put("/{claim_id}", response_model=schemas.ClaimOut)
-def update_claim_status(
+@router.post("/{claim_id}/approve", response_model=schemas.ClaimOut)
+def approve_claim(
     claim_id: str,
-    payload: schemas.ClaimUpdate,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Admin or Finder: approve or reject a claim. Trigger handles found_item status update."""
+    """Approve a claim, update item status, notify claimant."""
     claim = db.query(models.Claim).filter(models.Claim.id == claim_id).first()
     if not claim:
         raise HTTPException(status_code=404, detail="Claim not found")
-
     if claim.found_item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
         raise HTTPException(status_code=403, detail="Not authorized to manage this claim")
+        
+    claim.status = models.ClaimStatus.APPROVED
+    claim.found_item.status = models.FoundItemStatus.CLAIMED
+    
+    _create_notification(
+        db, claim.claimant_id,
+        message=f"✅ Your claim for '{claim.found_item.title}' was APPROVED! Please contact the finder to collect your item.",
+        sender_user_id=current_user.id,
+        title="Claim Approved",
+        type="CLAIM_APPROVED",
+        related_claim_id=claim.id,
+        related_item_id=claim.found_item.id
+    )
+    db.commit()
+    db.refresh(claim)
+    return claim
 
-    old_status = claim.status
-    claim.status = payload.status
-    claim.updated_at = datetime.utcnow()
-
-    # Application-level side effects (PostgreSQL trigger also handles this as DB safety net)
-    if payload.status == models.ClaimStatus.APPROVED and old_status != models.ClaimStatus.APPROVED:
-        claim.found_item.status = models.FoundItemStatus.CLAIMED
-        _create_notification(
-            db, claim.claimant_id,
-            f"✅ Your claim for '{claim.found_item.title}' has been APPROVED! Please collect your item."
-        )
-    elif payload.status == models.ClaimStatus.REJECTED and old_status != models.ClaimStatus.REJECTED:
-        _create_notification(
-            db, claim.claimant_id,
-            f"❌ Your claim for '{claim.found_item.title}' has been REJECTED. Contact admin for details."
-        )
-
+@router.post("/{claim_id}/reject", response_model=schemas.ClaimOut)
+def reject_claim(
+    claim_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Reject a claim, notify claimant."""
+    claim = db.query(models.Claim).filter(models.Claim.id == claim_id).first()
+    if not claim:
+        raise HTTPException(status_code=404, detail="Claim not found")
+    if claim.found_item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized to manage this claim")
+        
+    claim.status = models.ClaimStatus.REJECTED
+    
+    _create_notification(
+        db, claim.claimant_id,
+        message=f"❌ Your claim for '{claim.found_item.title}' was REJECTED.",
+        sender_user_id=current_user.id,
+        title="Claim Rejected",
+        type="CLAIM_REJECTED",
+        related_claim_id=claim.id,
+        related_item_id=claim.found_item.id
+    )
     db.commit()
     db.refresh(claim)
     return claim

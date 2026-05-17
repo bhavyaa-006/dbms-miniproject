@@ -15,7 +15,7 @@ def get_notifications(
     """Get all notifications for the current user (newest first)."""
     return (
         db.query(models.Notification)
-        .filter(models.Notification.user_id == current_user.id)
+        .filter(models.Notification.recipient_user_id == current_user.id)
         .order_by(models.Notification.created_at.desc())
         .all()
     )
@@ -32,7 +32,7 @@ def mark_read(
         db.query(models.Notification)
         .filter(
             models.Notification.id == notif_id,
-            models.Notification.user_id == current_user.id,
+            models.Notification.recipient_user_id == current_user.id,
         )
         .first()
     )
@@ -52,7 +52,7 @@ def mark_all_read(
 ):
     """Mark all notifications as read."""
     db.query(models.Notification).filter(
-        models.Notification.user_id == current_user.id,
+        models.Notification.recipient_user_id == current_user.id,
         models.Notification.is_read == False,
     ).update({"is_read": True})
     db.commit()

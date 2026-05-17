@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { MapPin, Calendar, User, Tag } from 'lucide-react'
 import StatusBadge from './StatusBadge'
 import { API_URL } from '../services/api'
@@ -70,9 +71,14 @@ export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwne
             Claim This
           </button>
         )}
+        {isOwner && (
+          <Link to={`/claims`} className="btn-primary text-xs py-1.5 flex-1 text-center">
+            View Claims
+          </Link>
+        )}
         {onEdit && isOwner && (
           <button onClick={() => onEdit(item)}
-            className="btn-secondary text-xs py-1.5">Edit</button>
+            className="btn-secondary text-xs py-1.5 flex-1">Edit</button>
         )}
         {onDelete && isOwner && (
           <button onClick={() => onDelete(item.id)}

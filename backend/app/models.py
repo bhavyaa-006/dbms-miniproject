@@ -48,7 +48,7 @@ class User(Base):
     lost_items = relationship("LostItem", back_populates="user", cascade="all, delete")
     found_items = relationship("FoundItem", back_populates="user", cascade="all, delete")
     claims = relationship("Claim", back_populates="claimant", cascade="all, delete")
-    notifications = relationship("Notification", back_populates="user", cascade="all, delete")
+    notifications = relationship("Notification", foreign_keys="[Notification.recipient_user_id]", back_populates="recipient", cascade="all, delete")
 
 
 class Category(Base):
@@ -136,9 +136,17 @@ class Notification(Base):
     __tablename__ = "notifications"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    recipient_user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    sender_user_id = Column(String, ForeignKey("users.id"), nullable=True)
+    title = Column(String(200), nullable=False, default="Notification")
+    type = Column(String(50), nullable=False, default="INFO")
     message = Column(Text, nullable=False)
+    related_claim_id = Column(String, ForeignKey("claims.id"), nullable=True)
+    related_item_id = Column(String, ForeignKey("found_items.id"), nullable=True)
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    user = relationship("User", back_populates="notifications")
+    recipient = relationship("User", foreign_keys=[recipient_user_id], back_populates="notifications")
+    sender = relationship("User", foreign_keys=[sender_user_id])
+    related_claim = relationship("Claim")
+    related_item = relationship("FoundItem")

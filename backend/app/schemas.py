@@ -178,9 +178,18 @@ class ClaimOut(BaseModel):
 
 class NotificationOut(BaseModel):
     id: str
+    recipient_user_id: str
+    sender_user_id: Optional[str] = None
+    title: str
+    type: str
     message: str
+    related_claim_id: Optional[str] = None
+    related_item_id: Optional[str] = None
     is_read: bool
     created_at: datetime
+    sender: Optional[UserOut] = None
+    related_claim: Optional[ClaimOut] = None
+    related_item: Optional[FoundItemOut] = None
     model_config = {"from_attributes": True}
 
 
