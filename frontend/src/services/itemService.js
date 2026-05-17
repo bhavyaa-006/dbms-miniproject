@@ -16,7 +16,7 @@ const multipartHeaders = {
 export const getLostItems    = (params) => api.get('/lost-items', { params })
 export const getMyLostItems  = ()       => api.get('/lost-items/my')
 export const getLostItem     = (id)     => api.get(`/lost-items/${id}`)
-export const createLostItem  = (payload) => api.post('/lost-items', payload)
+export const createLostItem  = (form)   => api.post('/lost-items', form, { headers: multipartHeaders })
 export const updateLostItem  = (id, payload) => api.put(`/lost-items/${id}`, payload)
 export const deleteLostItem  = (id)     => api.delete(`/lost-items/${id}`)
 

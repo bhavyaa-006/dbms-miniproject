@@ -10,6 +10,8 @@ from typing import List, Optional
 from .. import models, schemas
 from ..category_constants import validate_category_input
 from ..dependencies import get_db, get_current_user
+from ..utils.file_upload import save_upload_file
+from ..utils.serializers import serialize_lost_item
 from ..utils.file_upload import delete_upload_file
 import logging
 
@@ -41,24 +43,7 @@ def _safe_enum_value(value):
 
 
 def _serialize_lost_item_for_list(item: models.LostItem) -> dict:
-    category = getattr(item, "category", None)
-    user = getattr(item, "user", None)
-    return {
-        "id": str(item.id) if getattr(item, "id", None) else None,
-        "title": getattr(item, "title", None),
-        "description": getattr(item, "description", None),
-        "location": getattr(item, "location", None),
-        "status": _safe_enum_value(getattr(item, "status", None)),
-        "created_at": _safe_iso(getattr(item, "created_at", None)),
-        "category": {
-            "id": str(category.id) if getattr(category, "id", None) else None,
-            "name": getattr(category, "name", None),
-        } if category else None,
-        "user": {
-            "id": str(user.id) if getattr(user, "id", None) else None,
-            "name": getattr(user, "name", None),
-        } if user else None,
-    }
+    return serialize_lost_item(item) or {}
 
 
 def _repair_invalid_lost_item_statuses(db: Session) -> None:
@@ -148,9 +133,14 @@ async def create_lost_item(
 ):
     """Report a lost item."""
     payload_data = None
+    image = None
+    image_url = None
     try:
-        payload_data = await request.json()
+        form = await request.form()
+        payload_data = {key: value for key, value in form.items() if key != "image"}
+        image = form.get("image")
         print("Incoming lost item payload:", payload_data)
+        print("Incoming lost item image:", getattr(image, "filename", None))
         payload = schemas.LostItemCreate.model_validate(payload_data)
     except ValidationError as exc:
         db.rollback()
@@ -183,6 +173,9 @@ async def create_lost_item(
         status = models.LostItemStatus.LOST
         print("Creating lost item with status:", status)
 
+        if image and getattr(image, "filename", None):
+            image_url = await save_upload_file(image)
+
         item = models.LostItem(
             title=payload.title,
             description=payload.description,
@@ -191,6 +184,7 @@ async def create_lost_item(
             location=payload.location,
             date_lost=payload.date_lost,
             status=status,
+            image_url=image_url,
         )
         db.add(item)
         db.commit()
@@ -213,6 +207,11 @@ async def create_lost_item(
         return JSONResponse(status_code=exc.status_code, content={"success": False, "message": str(exc.detail), "detail": exc.detail})
     except SQLAlchemyError as exc:
         db.rollback()
+        if image_url:
+            try:
+                delete_upload_file(image_url)
+            except Exception:
+                pass
         print("Create lost item SQLAlchemy error:", str(exc))
         print("Create lost item payload at SQLAlchemy failure:", payload_data)
         traceback.print_exc()
@@ -227,6 +226,11 @@ async def create_lost_item(
         )
     except Exception as exc:
         db.rollback()
+        if image_url:
+            try:
+                delete_upload_file(image_url)
+            except Exception:
+                pass
         print(f"Create lost item error: {str(exc)}")
         print("Create lost item payload at unexpected failure:", payload_data)
         traceback.print_exc()
