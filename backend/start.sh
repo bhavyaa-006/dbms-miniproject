@@ -45,12 +45,12 @@ try:
     BEGIN
         IF NEW.status = 'APPROVED' AND (OLD.status IS NULL OR OLD.status != 'APPROVED') THEN
             UPDATE found_items SET status = 'CLAIMED' WHERE id = NEW.found_item_id;
-            INSERT INTO notifications (id, user_id, message, is_read, created_at)
-            SELECT gen_random_uuid()::text, NEW.claimant_id, '✅ [DB Trigger] Your claim has been APPROVED! Please collect your item.', false, NOW();
+            INSERT INTO notifications (id, recipient_user_id, title, type, message, is_read, created_at, related_claim_id, related_item_id)
+            SELECT gen_random_uuid()::text, NEW.claimant_id, 'Claim Approved', 'CLAIM_APPROVED', '✅ [DB Trigger] Your claim has been APPROVED! Please collect your item.', false, NOW(), NEW.id, NEW.found_item_id;
         END IF;
         IF NEW.status = 'REJECTED' AND (OLD.status IS NULL OR OLD.status != 'REJECTED') THEN
-            INSERT INTO notifications (id, user_id, message, is_read, created_at)
-            SELECT gen_random_uuid()::text, NEW.claimant_id, '❌ [DB Trigger] Your claim has been REJECTED. Please contact admin for details.', false, NOW();
+            INSERT INTO notifications (id, recipient_user_id, title, type, message, is_read, created_at, related_claim_id, related_item_id)
+            SELECT gen_random_uuid()::text, NEW.claimant_id, 'Claim Rejected', 'CLAIM_REJECTED', '❌ [DB Trigger] Your claim has been REJECTED. Please contact admin for details.', false, NOW(), NEW.id, NEW.found_item_id;
         END IF;
         RETURN NEW;
     END;
