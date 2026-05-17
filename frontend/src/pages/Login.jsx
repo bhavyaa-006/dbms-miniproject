@@ -53,14 +53,7 @@ export default function Login() {
         </button>
       </form>
 
-      {/* Demo credentials */}
-      <div className="bg-surface-2 rounded-lg p-3 text-xs text-zinc-500 border border-white/5 space-y-1">
-        <p className="font-medium text-zinc-400">Demo accounts:</p>
-        <p>Admin: admin@campus.edu / admin123</p>
-        <p>Student: alice@campus.edu / alice123</p>
-      </div>
-
-      <p className="text-center text-xs text-zinc-500">
+      <p className="text-center text-xs text-zinc-500 pt-2">
         No account?{' '}
         <Link to="/register" className="text-accent hover:text-accent-hover transition-colors">
           Register here
