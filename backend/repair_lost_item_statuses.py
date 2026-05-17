@@ -1,4 +1,4 @@
-"""Repair corrupted LostItem status values in PostgreSQL.
+"""Repair PostgreSQL enum labels and corrupted LostItem rows.
 
 Usage:
   python repair_lost_item_statuses.py
@@ -43,6 +43,14 @@ SQL = """
 UPDATE lost_items
 SET status = 'LOST'
 WHERE status IS NULL OR status::text NOT IN ('LOST', 'FOUND', 'CLOSED');
+
+UPDATE claims
+SET status = 'PENDING'
+WHERE status IS NULL OR status::text NOT IN ('PENDING', 'APPROVED', 'REJECTED');
+
+UPDATE found_items
+SET status = 'AVAILABLE'
+WHERE status IS NULL OR status::text NOT IN ('AVAILABLE', 'CLAIM_PENDING', 'CLAIMED', 'RETURNED');
 """
 
 
