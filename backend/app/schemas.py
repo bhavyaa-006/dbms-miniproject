@@ -2,7 +2,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from datetime import datetime, date
 from enum import Enum
-from .category_constants import PREDEFINED_CATEGORIES, validate_category_input
+from .category_constants import PREDEFINED_CATEGORIES, normalize_category
 
 
 # ─── Enums ────────────────────────────────────────────────────────────────────
@@ -74,14 +74,14 @@ class CategoriesResponse(BaseModel):
 class LostItemCreate(BaseModel):
     title: str
     description: Optional[str] = None
-    category: str
+    category: str = "Others"
     location: Optional[str] = None
     date_lost: date
 
     @field_validator("category")
     @classmethod
     def validate_category(cls, value: str) -> str:
-        return validate_category_input(value)
+        return normalize_category(value)
 
 
 class LostItemUpdate(BaseModel):
@@ -97,7 +97,7 @@ class LostItemUpdate(BaseModel):
     def validate_category(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
             return value
-        return validate_category_input(value)
+        return normalize_category(value)
 
 
 class LostItemOut(BaseModel):
@@ -119,14 +119,14 @@ class LostItemOut(BaseModel):
 class FoundItemCreate(BaseModel):
     title: str
     description: Optional[str] = None
-    category: str
+    category: str = "Others"
     location: Optional[str] = None
     date_found: date
 
     @field_validator("category")
     @classmethod
     def validate_category(cls, value: str) -> str:
-        return validate_category_input(value)
+        return normalize_category(value)
 
 
 class FoundItemUpdate(BaseModel):
@@ -142,7 +142,7 @@ class FoundItemUpdate(BaseModel):
     def validate_category(cls, value: Optional[str]) -> Optional[str]:
         if value is None:
             return value
-        return validate_category_input(value)
+        return normalize_category(value)
 
 
 class FoundItemOut(BaseModel):

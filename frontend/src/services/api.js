@@ -44,6 +44,13 @@ export const getApiErrorMessage = (error) => {
     return detail
   }
 
+  if (Array.isArray(detail) && detail.length > 0) {
+    const firstError = detail[0]
+    if (typeof firstError?.msg === 'string') {
+      return firstError.msg
+    }
+  }
+
   const message = error?.response?.data?.message
   if (typeof message === 'string') {
     return message

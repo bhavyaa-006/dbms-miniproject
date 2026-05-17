@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -57,6 +57,7 @@ def list_lost_items(
 
 @router.post("", response_model=schemas.LostItemOut, status_code=201)
 async def create_lost_item(
+    request: Request,
     title: str = Form(...),
     description: Optional[str] = Form(None),
     category: Optional[str] = Form(None),
@@ -69,6 +70,10 @@ async def create_lost_item(
 ):
     """Report a lost item (with optional image upload)."""
     try:
+        request_data = dict(await request.form())
+        print("Incoming lost item payload:", request_data)
+        logger.info("Incoming lost item payload: %s", request_data)
+
         image_url = None
         if image and image.filename:
             image_url = await save_upload_file(image)
