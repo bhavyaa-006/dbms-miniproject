@@ -10,8 +10,10 @@ export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwne
     ? `${API_URL}${item.image_url}`
     : null
 
+  const isResolved = ['FOUND', 'CLOSED', 'CLAIMED', 'RETURNED'].includes(item.status)
+
   return (
-    <div className="card group flex flex-col gap-4 hover:border-white/10 transition-all duration-200">
+    <div className="card group flex flex-col gap-4 hover:border-white/10 transition-all duration-200 relative">
       {/* Image */}
       {imageUrl ? (
         <div className="h-40 rounded-lg overflow-hidden bg-surface-2 -m-1">
@@ -78,11 +80,15 @@ export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwne
         )}
         {onEdit && isOwner && (
           <button onClick={() => onEdit(item)}
-            className="btn-secondary text-xs py-1.5 flex-1">Edit</button>
+            disabled={isResolved}
+            title={isResolved ? "Resolved items cannot be edited" : "Edit Item"}
+            className={`btn-secondary text-xs py-1.5 flex-1 ${isResolved ? 'opacity-50 cursor-not-allowed' : ''}`}>Edit</button>
         )}
         {onDelete && isOwner && (
           <button onClick={() => onDelete(item.id)}
-            className="btn-danger text-xs py-1.5">Delete</button>
+            disabled={isResolved}
+            title={isResolved ? "Resolved items cannot be deleted" : "Delete Item"}
+            className={`btn-danger text-xs py-1.5 flex-1 ${isResolved ? 'opacity-50 cursor-not-allowed' : ''}`}>Delete</button>
         )}
       </div>
 

@@ -157,6 +157,9 @@ def delete_found_item(
         raise HTTPException(status_code=404, detail="Found item not found")
     if item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
         raise HTTPException(status_code=403, detail="Not authorized")
+        
+    if item.status in [models.FoundItemStatus.CLAIMED, models.FoundItemStatus.RETURNED]:
+        raise HTTPException(status_code=400, detail="Resolved items cannot be deleted")
     if item.image_url:
         delete_upload_file(item.image_url)
     db.delete(item)

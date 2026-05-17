@@ -160,6 +160,9 @@ def delete_lost_item(
     if item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
         raise HTTPException(status_code=403, detail="Not authorized")
         
+    if item.status in [models.LostItemStatus.FOUND, models.LostItemStatus.CLOSED]:
+        raise HTTPException(status_code=400, detail="Resolved items cannot be deleted")
+        
     if item.image_url:
         delete_upload_file(item.image_url)
         

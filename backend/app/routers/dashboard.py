@@ -12,13 +12,17 @@ def get_stats(
     _: models.User = Depends(get_current_user),
 ):
     """Get summary statistics for the dashboard overview."""
-    total_lost = db.query(models.LostItem).count()
-    total_found = db.query(models.FoundItem).count()
+    total_lost = db.query(models.LostItem).filter(
+        models.LostItem.status == models.LostItemStatus.LOST
+    ).count()
+    total_found = db.query(models.FoundItem).filter(
+        models.FoundItem.status.in_([models.FoundItemStatus.AVAILABLE, models.FoundItemStatus.CLAIM_PENDING])
+    ).count()
     pending_claims = db.query(models.Claim).filter(
         models.Claim.status == models.ClaimStatus.PENDING
     ).count()
     resolved_items = db.query(models.FoundItem).filter(
-        models.FoundItem.status == models.FoundItemStatus.CLAIMED
+        models.FoundItem.status.in_([models.FoundItemStatus.CLAIMED, models.FoundItemStatus.RETURNED])
     ).count()
 
     return {
