@@ -14,13 +14,16 @@ class Role(str, Enum):
 
 
 class LostItemStatus(str, Enum):
-    PENDING = "PENDING"
-    RESOLVED = "RESOLVED"
+    LOST = "LOST"
+    FOUND = "FOUND"
+    CLOSED = "CLOSED"
 
 
 class FoundItemStatus(str, Enum):
     AVAILABLE = "AVAILABLE"
+    CLAIM_PENDING = "CLAIM_PENDING"
     CLAIMED = "CLAIMED"
+    RETURNED = "RETURNED"
 
 
 class ClaimStatus(str, Enum):

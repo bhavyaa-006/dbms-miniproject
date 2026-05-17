@@ -11,7 +11,7 @@ import PageState from '../components/PageState'
 import { Link } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 
-const STATUS_OPTIONS = ['AVAILABLE', 'CLAIMED']
+const STATUS_OPTIONS = ['AVAILABLE', 'CLAIM_PENDING', 'CLAIMED', 'RETURNED']
 
 export default function FoundItems() {
   const { user } = useAuth()

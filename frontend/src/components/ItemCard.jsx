@@ -71,7 +71,7 @@ export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwne
             Claim This
           </button>
         )}
-        {isOwner && (!itemClaims || itemClaims.length === 0) && (
+        {isOwner && type === 'found' && (!itemClaims || itemClaims.length === 0) && (
           <Link to={`/claims`} className="btn-primary text-xs py-1.5 flex-1 text-center">
             View Claims
           </Link>
@@ -87,7 +87,7 @@ export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwne
       </div>
 
       {/* Inline Pending Claims */}
-      {isOwner && itemClaims && itemClaims.some(c => c.status === 'PENDING') && (
+      {isOwner && type === 'found' && itemClaims && itemClaims.some(c => c.status === 'PENDING') && (
         <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-white/10">
           <p className="text-xs font-semibold text-zinc-300">Pending Claims:</p>
           {itemClaims.filter(c => c.status === 'PENDING').map(claim => (

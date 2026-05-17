@@ -9,7 +9,7 @@ import PageState from '../components/PageState'
 import { Link } from 'react-router-dom'
 import { Plus, Search } from 'lucide-react'
 
-const STATUS_OPTIONS = ['PENDING', 'RESOLVED']
+const STATUS_OPTIONS = ['LOST', 'FOUND', 'CLOSED']
 
 export default function LostItems() {
   const { user } = useAuth()

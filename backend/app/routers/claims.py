@@ -143,7 +143,20 @@ def approve_claim(
             
         # Update statuses
         claim.status = models.ClaimStatus.APPROVED
-        item.status = models.FoundItemStatus.CLAIMED
+        item.status = models.FoundItemStatus.RETURNED
+        
+        print("Checking for matching Lost Items...")
+        matching_lost_items = db.query(models.LostItem).filter(
+            models.LostItem.user_id == claim.claimant_id,
+            models.LostItem.category_id == item.category_id,
+            models.LostItem.status == models.LostItemStatus.LOST
+        ).all()
+        
+        for lost_item in matching_lost_items:
+            if lost_item.title.lower().strip() == item.title.lower().strip():
+                print(f"Matched LostItem {lost_item.id}! Updating status to FOUND.")
+                lost_item.status = models.LostItemStatus.FOUND
+                break
         
         print("Statuses updated. Creating notification...")
         

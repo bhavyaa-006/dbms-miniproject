@@ -18,13 +18,16 @@ class Role(str, enum.Enum):
 
 
 class LostItemStatus(str, enum.Enum):
-    PENDING = "PENDING"
-    RESOLVED = "RESOLVED"
+    LOST = "LOST"
+    FOUND = "FOUND"
+    CLOSED = "CLOSED"
 
 
 class FoundItemStatus(str, enum.Enum):
     AVAILABLE = "AVAILABLE"
+    CLAIM_PENDING = "CLAIM_PENDING"
     CLAIMED = "CLAIMED"
+    RETURNED = "RETURNED"
 
 
 class ClaimStatus(str, enum.Enum):
@@ -71,7 +74,7 @@ class LostItem(Base):
     category_id = Column(String, ForeignKey("categories.id"), nullable=False)
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     location = Column(String(200), nullable=True)
-    status = Column(SAEnum(LostItemStatus), default=LostItemStatus.PENDING, nullable=False)
+    status = Column(SAEnum(LostItemStatus), default=LostItemStatus.LOST, nullable=False)
     image_url = Column(String, nullable=True)
     date_lost = Column(Date, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
