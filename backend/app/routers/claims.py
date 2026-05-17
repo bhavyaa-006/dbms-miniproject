@@ -97,7 +97,7 @@ def my_claims(
     )
 
 
-@router.post("/{claim_id}/approve", response_model=schemas.ClaimOut)
+@router.post("/{claim_id}/approve")
 def approve_claim(
     claim_id: str,
     db: Session = Depends(get_db),
@@ -124,9 +124,12 @@ def approve_claim(
     )
     db.commit()
     db.refresh(claim)
-    return claim
+    return {
+        "success": True,
+        "message": "Claim approved"
+    }
 
-@router.post("/{claim_id}/reject", response_model=schemas.ClaimOut)
+@router.post("/{claim_id}/reject")
 def reject_claim(
     claim_id: str,
     db: Session = Depends(get_db),
@@ -152,4 +155,7 @@ def reject_claim(
     )
     db.commit()
     db.refresh(claim)
-    return claim
+    return {
+        "success": True,
+        "message": "Claim rejected"
+    }

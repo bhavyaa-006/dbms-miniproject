@@ -180,8 +180,8 @@ class NotificationOut(BaseModel):
     id: str
     recipient_user_id: str
     sender_user_id: Optional[str] = None
-    title: str
-    type: str
+    title: Optional[str] = None
+    type: Optional[str] = None
     message: str
     related_claim_id: Optional[str] = None
     related_item_id: Optional[str] = None

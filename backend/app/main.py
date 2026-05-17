@@ -147,11 +147,30 @@ def _ensure_category_foreign_key(connection, table_name: str):
     connection.execute(text(f"ALTER TABLE {table_name} ALTER COLUMN category_id SET NOT NULL"))
 
 
-def ensure_category_schema():
+def _ensure_notification_schema(connection):
+    inspector = inspect(connection)
+    if "notifications" not in inspector.get_table_names():
+        return
+        
+    columns = {column["name"] for column in inspector.get_columns("notifications")}
+    
+    if "user_id" in columns and "recipient_user_id" not in columns:
+        connection.execute(text("ALTER TABLE notifications RENAME COLUMN user_id TO recipient_user_id"))
+    
+    new_columns = [
+        "sender_user_id", "title", "type", "related_claim_id", "related_item_id"
+    ]
+    for col in new_columns:
+        if col not in columns:
+            connection.execute(text(f"ALTER TABLE notifications ADD COLUMN {col} VARCHAR"))
+
+
+def ensure_database_schema():
     with engine.begin() as connection:
         _seed_default_categories(connection)
         _ensure_category_foreign_key(connection, "lost_items")
         _ensure_category_foreign_key(connection, "found_items")
+        _ensure_notification_schema(connection)
 
 # ─── Static files (uploaded images) ──────────────────────────────────────────
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -172,7 +191,7 @@ def startup_event():
     try:
         logger.info("Creating database tables on startup")
         Base.metadata.create_all(bind=engine)
-        ensure_category_schema()
+        ensure_database_schema()
         os.makedirs("uploads", exist_ok=True)
     except Exception:
         logger.exception("Failed to initialize database tables")
