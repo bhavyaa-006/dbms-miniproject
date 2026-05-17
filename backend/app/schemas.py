@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, field_validator, model_validator
 from typing import Optional
 from datetime import datetime, date
 from uuid import UUID
@@ -48,28 +48,116 @@ class CategoryOut(BaseModel):
 class LostItemCreate(BaseModel):
     title: str
     description: Optional[str] = None
-    category_id: UUID
+    category_id: str
     location: Optional[str] = None
     date_lost: date
 
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value):
+        if not isinstance(value, dict):
+            return value
+
+        data = dict(value)
+        if not data.get("title") and data.get("itemTitle"):
+            data["title"] = data.get("itemTitle")
+        if not data.get("category_id") and data.get("category"):
+            data["category_id"] = data.get("category")
+        if not data.get("date_lost") and data.get("lost_date"):
+            data["date_lost"] = data.get("lost_date")
+        return data
+
     @field_validator("category_id")
     @classmethod
-    def validate_category_id(cls, value: UUID) -> UUID:
-        return value
+    def validate_category_id(cls, value: str) -> str:
+        if value is None:
+            raise ValueError("category_id is required")
+        normalized = str(value).strip()
+        if not normalized:
+            raise ValueError("category_id is required")
+        return normalized
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, value: str) -> str:
+        if value is None:
+            raise ValueError("title is required")
+        normalized = str(value).strip()
+        if not normalized:
+            raise ValueError("title is required")
+        return normalized
+
+    @field_validator("date_lost", mode="before")
+    @classmethod
+    def parse_date_lost(cls, value):
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date):
+            return value
+        if isinstance(value, str):
+            normalized = value.strip()
+            if not normalized:
+                raise ValueError("date_lost is required")
+            for date_format in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y"):
+                try:
+                    return datetime.strptime(normalized, date_format).date()
+                except ValueError:
+                    continue
+        raise ValueError("Invalid date format. Expected YYYY-MM-DD or DD-MM-YYYY")
 
 
 class LostItemUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
-    category_id: Optional[UUID] = None
+    category_id: Optional[str] = None
     location: Optional[str] = None
     status: Optional[LostItemStatus] = None
     date_lost: Optional[date] = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_payload(cls, value):
+        if not isinstance(value, dict):
+            return value
+
+        data = dict(value)
+        if not data.get("title") and data.get("itemTitle"):
+            data["title"] = data.get("itemTitle")
+        if not data.get("category_id") and data.get("category"):
+            data["category_id"] = data.get("category")
+        if not data.get("date_lost") and data.get("lost_date"):
+            data["date_lost"] = data.get("lost_date")
+        return data
+
     @field_validator("category_id")
     @classmethod
-    def validate_category_id(cls, value: Optional[UUID]) -> Optional[UUID]:
-        return value
+    def validate_category_id(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        normalized = str(value).strip()
+        if not normalized:
+            raise ValueError("category_id cannot be empty")
+        return normalized
+
+    @field_validator("date_lost", mode="before")
+    @classmethod
+    def parse_date_lost(cls, value):
+        if value is None:
+            return None
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date):
+            return value
+        if isinstance(value, str):
+            normalized = value.strip()
+            if not normalized:
+                return None
+            for date_format in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y"):
+                try:
+                    return datetime.strptime(normalized, date_format).date()
+                except ValueError:
+                    continue
+        raise ValueError("Invalid date format. Expected YYYY-MM-DD or DD-MM-YYYY")
 
 
 class LostItemOut(BaseModel):

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, date
 from sqlalchemy import (
     Column, String, Text, Boolean, DateTime, Date,
-    Enum as SAEnum, ForeignKey, Index, CheckConstraint
+    Enum as SAEnum, ForeignKey, Index, CheckConstraint, text
 )
 from sqlalchemy.orm import relationship
 from .database import Base
@@ -48,7 +48,12 @@ class LostItem(Base):
     category_id = Column(String, ForeignKey("categories.id"), nullable=False)
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     location = Column(String(200), nullable=True)
-    status = Column(SAEnum(LostItemStatus, name="lostitemstatus", create_type=False), default=LostItemStatus.LOST, nullable=False)
+    status = Column(
+        SAEnum(LostItemStatus, name="lostitemstatus", create_type=False),
+        default=LostItemStatus.LOST,
+        server_default=text("'LOST'"),
+        nullable=False,
+    )
     image_url = Column(String, nullable=True)
     date_lost = Column(Date, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -72,7 +77,12 @@ class FoundItem(Base):
     category_id = Column(String, ForeignKey("categories.id"), nullable=False)
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     location = Column(String(200), nullable=True)
-    status = Column(SAEnum(FoundItemStatus, name="founditemstatus", create_type=False), default=FoundItemStatus.AVAILABLE, nullable=False)
+    status = Column(
+        SAEnum(FoundItemStatus, name="founditemstatus", create_type=False),
+        default=FoundItemStatus.AVAILABLE,
+        server_default=text("'AVAILABLE'"),
+        nullable=False,
+    )
     image_url = Column(String, nullable=True)
     date_found = Column(Date, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)

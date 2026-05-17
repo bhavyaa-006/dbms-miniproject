@@ -1,11 +1,14 @@
 import traceback
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from .. import models, schemas
+from ..category_constants import validate_category_input
 from ..dependencies import get_db, get_current_user
 from ..utils.file_upload import delete_upload_file
 import logging
@@ -69,9 +72,22 @@ def _repair_invalid_lost_item_statuses(db: Session) -> None:
 
 
 def _get_category_or_404(db: Session, category_id) -> models.Category:
-    category = db.query(models.Category).filter(models.Category.id == str(category_id)).first()
+    category_value = str(category_id).strip() if category_id is not None else ""
+    if not category_value:
+        raise HTTPException(status_code=400, detail="Category is required")
+
+    category = db.query(models.Category).filter(models.Category.id == category_value).first()
+    if category:
+        return category
+
+    try:
+        category_name = validate_category_input(category_value)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid category") from exc
+
+    category = db.query(models.Category).filter(models.Category.name == category_name).first()
     if not category:
-        raise HTTPException(status_code=422, detail="Invalid category")
+        raise HTTPException(status_code=400, detail="Invalid category")
     return category
 
 
@@ -126,15 +142,46 @@ def list_lost_items(
 
 @router.post("", status_code=201)
 async def create_lost_item(
-    payload: schemas.LostItemCreate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
     """Report a lost item."""
+    payload_data = None
     try:
-        category = db.query(models.Category).filter(models.Category.id == payload.category_id).first()
-        if not category:
-            category = _get_category_or_404(db, payload.category_id)
+        payload_data = await request.json()
+        print("Incoming lost item payload:", payload_data)
+        payload = schemas.LostItemCreate.model_validate(payload_data)
+    except ValidationError as exc:
+        db.rollback()
+        print("Create lost item validation failed:", payload_data)
+        print("Create lost item validation errors:", exc.errors())
+        traceback.print_exc()
+        logger.warning(
+            "Create lost item validation failed payload=%s errors=%s",
+            payload_data,
+            exc.errors(),
+            exc_info=True,
+        )
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "Validation failed", "detail": exc.errors()},
+        )
+    except Exception as exc:
+        db.rollback()
+        print("Create lost item payload parsing failed:", payload_data)
+        print("Create lost item payload parsing error:", str(exc))
+        traceback.print_exc()
+        logger.exception("Create lost item request parsing failed payload=%s", payload_data)
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "Invalid request payload", "detail": str(exc)},
+        )
+
+    try:
+        category = _get_category_or_404(db, payload.category_id)
+        status = models.LostItemStatus.LOST
+        print("Creating lost item with status:", status)
 
         item = models.LostItem(
             title=payload.title,
@@ -143,7 +190,7 @@ async def create_lost_item(
             user_id=current_user.id,
             location=payload.location,
             date_lost=payload.date_lost,
-            status=models.LostItemStatus.LOST
+            status=status,
         )
         db.add(item)
         db.commit()
@@ -164,10 +211,30 @@ async def create_lost_item(
         print(f"Create lost item validation failed: {str(exc.detail)}")
         traceback.print_exc()
         return JSONResponse(status_code=exc.status_code, content={"success": False, "message": str(exc.detail), "detail": exc.detail})
+    except SQLAlchemyError as exc:
+        db.rollback()
+        print("Create lost item SQLAlchemy error:", str(exc))
+        print("Create lost item payload at SQLAlchemy failure:", payload_data)
+        traceback.print_exc()
+        logger.exception(
+            "Create lost item SQLAlchemy failure payload=%s user_id=%s",
+            payload_data,
+            getattr(current_user, "id", None),
+        )
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "Failed to create lost item", "detail": str(exc)},
+        )
     except Exception as exc:
         db.rollback()
         print(f"Create lost item error: {str(exc)}")
+        print("Create lost item payload at unexpected failure:", payload_data)
         traceback.print_exc()
+        logger.exception(
+            "Unexpected create lost item failure payload=%s user_id=%s",
+            payload_data,
+            getattr(current_user, "id", None),
+        )
         return JSONResponse(status_code=500, content={"success": False, "message": "Internal server error"})
 
 
