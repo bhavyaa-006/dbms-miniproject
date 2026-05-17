@@ -70,7 +70,7 @@ export default function Claims() {
   }
 
   return (
-    <div className="space-y-5 max-w-4xl">
+    <div className="w-full max-w-4xl space-y-5">
       <div>
         <h1 className="text-lg font-semibold text-zinc-100">All Claims</h1>
         <p className="text-xs text-zinc-500 mt-0.5">{claims.length} claim{claims.length !== 1 ? 's' : ''} total</p>
@@ -80,8 +80,8 @@ export default function Claims() {
         ? <PageState icon={ClipboardList} title="No claims submitted yet" description="Claims will appear here after users submit them." />
         : claims.map(claim => (
           <div key={claim.id} className="card space-y-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
                 <p className="text-sm font-semibold text-zinc-100">{claim.found_item?.title}</p>
                 <p className="text-xs text-zinc-500 mt-0.5">
                   Claimed by: <span className="text-zinc-300">{claim.claimant?.name}</span>
@@ -91,7 +91,7 @@ export default function Claims() {
               <StatusBadge status={claim.status} />
             </div>
 
-            <div className="flex gap-4 text-xs text-zinc-500">
+            <div className="flex flex-col gap-2 text-xs text-zinc-500 sm:flex-row sm:flex-wrap sm:gap-4">
               {claim.found_item?.location && (
                 <span className="flex items-center gap-1"><MapPin size={11} />{claim.found_item.location}</span>
               )}
@@ -108,12 +108,12 @@ export default function Claims() {
             )}
 
             {claim.status === 'PENDING' && (
-              <div className="flex gap-2 pt-1">
+              <div className="flex flex-col gap-2 pt-1 sm:flex-row">
                 <button
                   id={`approve-${claim.id}`}
                   onClick={() => handleApprove(claim.id)}
                   disabled={updating === claim.id}
-                  className="flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400
+                  className="flex items-center justify-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400
                              border border-emerald-500/20 rounded-lg px-3 py-1.5 text-xs font-medium transition-all"
                 >
                   <CheckCircle size={13} /> Approve
@@ -122,7 +122,7 @@ export default function Claims() {
                   id={`reject-${claim.id}`}
                   onClick={() => handleReject(claim.id)}
                   disabled={updating === claim.id}
-                  className="flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400
+                  className="flex items-center justify-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400
                              border border-red-500/20 rounded-lg px-3 py-1.5 text-xs font-medium transition-all"
                 >
                   <XCircle size={13} /> Reject

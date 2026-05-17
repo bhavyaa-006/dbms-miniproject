@@ -89,8 +89,8 @@ export default function Notifications() {
   if (loading) return <LoadingSpinner />
 
   return (
-    <div className="space-y-4 max-w-2xl">
-      <div className="flex items-center justify-between">
+    <div className="w-full max-w-2xl space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-lg font-semibold text-zinc-100">Notifications</h1>
           <p className="text-xs text-zinc-500 mt-0.5">
@@ -99,7 +99,7 @@ export default function Notifications() {
         </div>
         {unread > 0 && (
           <button onClick={handleMarkAll}
-            className="btn-secondary text-xs flex items-center gap-1.5 py-1.5">
+            className="btn-secondary text-xs flex items-center justify-center gap-1.5 py-1.5 self-start">
             <CheckCheck size={13} /> Mark all read
           </button>
         )}
@@ -125,11 +125,11 @@ export default function Notifications() {
                   </p>
                 </div>
                 {n.type === 'CLAIM_REQUEST' && n.related_claim?.status === 'PENDING' && (
-                  <div className="flex gap-2 pt-2 border-t border-white/5">
+                  <div className="flex flex-col gap-2 pt-2 border-t border-white/5 sm:flex-row">
                     <button
                       onClick={(e) => handleApprove(e, n)}
                       disabled={updating === n.related_claim_id}
-                      className="flex items-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400
+                      className="flex items-center justify-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400
                                  border border-emerald-500/20 rounded-lg px-3 py-1.5 text-xs font-medium transition-all"
                     >
                       <CheckCircle size={13} /> Approve Claim
@@ -137,7 +137,7 @@ export default function Notifications() {
                     <button
                       onClick={(e) => handleReject(e, n)}
                       disabled={updating === n.related_claim_id}
-                      className="flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400
+                      className="flex items-center justify-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400
                                  border border-red-500/20 rounded-lg px-3 py-1.5 text-xs font-medium transition-all"
                     >
                       <XCircle size={13} /> Reject Claim

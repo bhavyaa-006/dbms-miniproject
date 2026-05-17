@@ -72,7 +72,7 @@ export default function ReportFound() {
   }
 
   return (
-    <div className="max-w-lg space-y-5">
+    <div className="w-full max-w-lg space-y-5">
       <div>
         <h1 className="text-lg font-semibold text-zinc-100">Report Found Item</h1>
         <p className="text-xs text-zinc-500 mt-0.5">Help someone get their item back by reporting it here.</p>
@@ -106,7 +106,7 @@ export default function ReportFound() {
             placeholder="Describe the item" className="input resize-none text-sm" />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="label">Category *</label>
               <select name="category_id" required value={form.category_id} onChange={(e) => { handleChange(e); setCategoryValidationError('') }} className="input" disabled={categoryLoading || !!categoryError || categoryUnavailable}>
@@ -139,7 +139,7 @@ export default function ReportFound() {
           </label>
         </div>
 
-        <div className="flex gap-3 pt-1">
+        <div className="flex flex-col-reverse gap-3 pt-1 sm:flex-row">
           <button type="button" onClick={() => navigate(-1)} className="btn-secondary flex-1">Cancel</button>
           <button type="submit" disabled={loading || categoryUnavailable} className="btn-primary flex-1">
             {loading ? 'Submitting...' : 'Submit Report'}

@@ -25,8 +25,8 @@ export default function ClaimModal({ item, onClose, onSuccess }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="card w-full max-w-md">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:items-center bg-black/60 backdrop-blur-sm">
+      <div className="card w-full max-w-md max-h-[calc(100svh-2rem)] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-zinc-100">Claim Item</h3>
@@ -54,7 +54,7 @@ export default function ClaimModal({ item, onClose, onSuccess }) {
             />
           </div>
 
-          <div className="flex gap-3 pt-1">
+          <div className="flex flex-col gap-3 pt-1 sm:flex-row">
             <button type="button" onClick={onClose} className="btn-secondary flex-1">
               Cancel
             </button>

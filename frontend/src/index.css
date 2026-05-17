@@ -12,11 +12,22 @@
     color: #e4e4e7;
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
   }
 
   body {
     margin: 0;
     min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  img {
+    display: block;
+    max-width: 100%;
   }
 
   ::-webkit-scrollbar {
@@ -39,7 +50,7 @@
 
 @layer components {
   .card {
-    @apply bg-surface border border-white/5 rounded-xl p-5 shadow-card;
+    @apply bg-surface border border-white/5 rounded-xl p-4 sm:p-5 shadow-card;
   }
 
   .btn-primary {
@@ -72,7 +83,7 @@
   }
 
   .sidebar-link {
-    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-400 hover:text-zinc-100
+    @apply flex w-full items-center gap-3 px-3 py-2 rounded-lg text-zinc-400 hover:text-zinc-100
            hover:bg-white/5 transition-all duration-150 text-sm font-medium;
   }
 

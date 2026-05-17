@@ -43,7 +43,7 @@ export default function MyClaims() {
   }
 
   return (
-    <div className="space-y-5 max-w-3xl">
+    <div className="w-full max-w-3xl space-y-5">
       <div>
         <h1 className="text-lg font-semibold text-zinc-100">My Claims</h1>
         <p className="text-xs text-zinc-500 mt-0.5">Track the status of your submitted claims.</p>
@@ -53,8 +53,8 @@ export default function MyClaims() {
         ? <PageState icon={Calendar} title="No claims submitted yet" description="Browse Found Items to submit your first claim." />
         : claims.map(claim => (
           <div key={claim.id} className="card space-y-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
                 <p className="text-sm font-semibold text-zinc-100">{claim.found_item?.title}</p>
                 <p className="text-xs text-zinc-500 mt-0.5">
                   Found by: <span className="text-zinc-300">{claim.found_item?.user?.name}</span>
@@ -63,7 +63,7 @@ export default function MyClaims() {
               <StatusBadge status={claim.status} />
             </div>
 
-            <div className="flex gap-4 text-xs text-zinc-500">
+            <div className="flex flex-col gap-2 text-xs text-zinc-500 sm:flex-row sm:flex-wrap sm:gap-4">
               {claim.found_item?.location && (
                 <span className="flex items-center gap-1"><MapPin size={11} />{claim.found_item.location}</span>
               )}

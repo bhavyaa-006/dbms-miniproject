@@ -29,7 +29,7 @@ export default function Login() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="w-full space-y-5">
       <div>
         <h2 className="text-base font-semibold text-zinc-100">Sign in</h2>
         <p className="text-sm text-zinc-500 mt-0.5">Welcome back to Campus L&amp;F</p>

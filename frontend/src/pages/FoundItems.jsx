@@ -103,13 +103,13 @@ export default function FoundItems() {
   }
 
   return (
-    <div className="space-y-5 max-w-6xl">
-      <div className="flex items-center justify-between">
+    <div className="w-full max-w-6xl space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-lg font-semibold text-zinc-100">Found Items</h1>
           <p className="text-xs text-zinc-500 mt-0.5">{items.length} item{items.length !== 1 ? 's' : ''} reported</p>
         </div>
-        <Link to="/report-found" className="btn-primary text-sm flex items-center gap-2">
+        <Link to="/report-found" className="btn-primary text-sm flex items-center justify-center gap-2 self-start">
           <Plus size={14} /> Report Found
         </Link>
       </div>
@@ -143,7 +143,7 @@ export default function FoundItems() {
           <PageState icon={Plus} title="No found items reported yet" description="Found item reports will appear here when they are created." />
         )
         : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {items.map(item => {
               const itemClaims = claims.filter(c => c.found_item?.id === item.id)
               return (

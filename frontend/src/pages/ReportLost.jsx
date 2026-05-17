@@ -89,7 +89,7 @@ export default function ReportLost() {
   }
 
   return (
-    <div className="max-w-lg space-y-5">
+    <div className="w-full max-w-lg space-y-5">
       <div>
         <h1 className="text-lg font-semibold text-zinc-100">Report Lost Item</h1>
         <p className="text-xs text-zinc-500 mt-0.5">Fill in the details to help others find your item.</p>
@@ -123,7 +123,7 @@ export default function ReportLost() {
             placeholder="Describe the item" className="input resize-none text-sm" />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className="label">Category *</label>
             <select
@@ -163,7 +163,7 @@ export default function ReportLost() {
           </label>
         </div>
 
-        <div className="flex gap-3 pt-1">
+        <div className="flex flex-col-reverse gap-3 pt-1 sm:flex-row">
           <button type="button" onClick={() => navigate(-1)} className="btn-secondary flex-1">Cancel</button>
           <button type="submit" disabled={loading || categoryUnavailable} className="btn-primary flex-1">
             {loading ? 'Submitting...' : 'Submit Report'}

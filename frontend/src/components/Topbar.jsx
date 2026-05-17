@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Bell } from 'lucide-react'
+import { Bell, Menu } from 'lucide-react'
 import { getNotifications } from '../services/claimService'
 
 const pageTitles = {
@@ -14,7 +14,7 @@ const pageTitles = {
   '/notifications': 'Notifications',
 }
 
-export default function Topbar() {
+export default function Topbar({ onMenuClick }) {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const [unread, setUnread] = useState(0)
@@ -27,10 +27,21 @@ export default function Topbar() {
 
   return (
     <header className="h-14 flex-shrink-0 border-b border-white/5 bg-surface
-                        flex items-center justify-between px-6">
-      <h2 className="text-sm font-semibold text-zinc-100">
-        {pageTitles[pathname] || 'Campus L&F'}
-      </h2>
+                        flex items-center justify-between gap-3 px-4 sm:px-6">
+      <div className="flex min-w-0 items-center gap-2">
+        <button
+          type="button"
+          onClick={onMenuClick}
+          className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg
+                     text-zinc-400 hover:bg-white/5 hover:text-zinc-100 transition-all md:hidden"
+          aria-label="Open navigation menu"
+        >
+          <Menu size={18} />
+        </button>
+        <h2 className="min-w-0 truncate text-sm font-semibold text-zinc-100">
+          {pageTitles[pathname] || 'Campus L&F'}
+        </h2>
+      </div>
 
       <button
         id="notifications-btn"

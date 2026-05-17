@@ -19,7 +19,7 @@ const adminExtra = [
   { to: '/claims', icon: ShieldCheck, label: 'All Claims' },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ mobileOpen = false, onClose }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
@@ -30,12 +30,19 @@ export default function Sidebar() {
   const handleLogout = () => {
     logout()
     navigate('/login')
+    if (onClose) onClose()
+  }
+
+  const handleNavigate = () => {
+    if (onClose) onClose()
   }
 
   return (
-    <aside className="w-56 flex-shrink-0 bg-surface border-r border-white/5 flex flex-col">
+    <aside className={`fixed inset-y-0 left-0 z-40 w-56 flex-shrink-0 bg-surface border-r border-white/5 flex flex-col
+                       transition-transform duration-200 ease-out md:static md:translate-x-0
+                       ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
       {/* Logo */}
-      <div className="px-4 py-5 border-b border-white/5">
+      <div className="px-4 py-4 sm:py-5 border-b border-white/5">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20
                           flex items-center justify-center text-base">🔍</div>
@@ -52,6 +59,7 @@ export default function Sidebar() {
           <NavLink
             key={to}
             to={to}
+            onClick={handleNavigate}
             className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
           >
             <Icon size={16} />
@@ -72,7 +80,7 @@ export default function Sidebar() {
             <p className="text-[10px] text-zinc-500 capitalize">{user?.role?.toLowerCase()}</p>
           </div>
         </div>
-        <button onClick={handleLogout} className="sidebar-link w-full text-red-400 hover:text-red-300 hover:bg-red-500/5">
+        <button type="button" onClick={handleLogout} className="sidebar-link w-full text-red-400 hover:text-red-300 hover:bg-red-500/5">
           <LogOut size={16} />
           Logout
         </button>

@@ -15,10 +15,10 @@ export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwne
     : item.status === 'CLAIMED'
 
   return (
-    <div className="card group flex flex-col gap-4 hover:border-white/10 transition-all duration-200 relative">
+    <div className="card group flex h-full flex-col gap-4 hover:border-white/10 transition-all duration-200 relative">
       {/* Image */}
       {imageUrl ? (
-        <div className="h-40 rounded-lg overflow-hidden bg-surface-2 -m-1">
+        <div className="h-36 sm:h-40 rounded-lg overflow-hidden bg-surface-2 -m-1">
           <img
             src={imageUrl}
             alt={item.title}
@@ -68,7 +68,7 @@ export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwne
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2 pt-1 border-t border-white/5 mt-auto">
+      <div className="flex flex-col gap-2 pt-1 border-t border-white/5 mt-auto sm:flex-row">
         {onClaim && item.status === 'AVAILABLE' && (
           <button id={`claim-${item.id}`} onClick={() => onClaim(item)}
             className="btn-primary text-xs py-1.5 flex-1">
@@ -106,7 +106,7 @@ export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwne
                   <p className="text-[11px] text-zinc-400 mt-0.5 line-clamp-2">Proof: {claim.description}</p>
                 )}
               </div>
-              <div className="flex gap-1.5">
+              <div className="flex flex-col gap-1.5 sm:flex-row">
                 <button
                   onClick={() => onApproveClaim(claim.id)}
                   disabled={updatingClaim === claim.id}
