@@ -23,11 +23,13 @@ logger = logging.getLogger(__name__)
 
 
 def main() -> None:
-    with engine.begin() as connection:
+    with engine.connect() as connection:
         logger.info("Repairing enum types")
         repair_database_enums(connection)
+        connection.commit()
         logger.info("Repairing enum-backed rows")
         repair_enum_data(connection)
+        connection.commit()
 
 
 if __name__ == "__main__":

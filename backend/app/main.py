@@ -12,7 +12,7 @@ from sqlalchemy import inspect, text
 
 from .database import engine, Base
 from .category_constants import DEFAULT_CATEGORY, PREDEFINED_CATEGORIES
-from .enum_repair import repair_database_enums_and_rows, repair_enum_rows, ENUM_LEGACY_ROW_VALUES
+from .enum_repair import repair_database_enums, repair_enum_data, repair_enum_rows, ENUM_LEGACY_ROW_VALUES
 from . import models  # noqa: F401 - ensures models are registered with Base
 from .routers import auth, lost_items, found_items, claims, notifications, categories, dashboard
 
@@ -254,9 +254,11 @@ def startup_event():
     try:
         logger.info("Repairing database enums and creating tables on startup")
         with engine.begin() as connection:
-            repair_database_enums_and_rows(connection)
+            repair_database_enums(connection)
+        with engine.begin() as connection:
             Base.metadata.create_all(bind=connection)
             ensure_database_schema(connection)
+            repair_enum_data(connection)
         os.makedirs("uploads", exist_ok=True)
     except Exception:
         logger.exception("Failed to initialize database tables")

@@ -21,6 +21,8 @@ ENUM_LEGACY_ROW_VALUES: dict[str, dict[str, str]] = {
     "lost_items": {
         "lost": "LOST",
         "found": "FOUND",
+        "resolved": "FOUND",
+        "pending": "LOST",
         "closed": "CLOSED",
         "PENDING": "LOST",
         "RESOLVED": "FOUND",
@@ -67,18 +69,28 @@ def ensure_pg_enum_type(connection, enum_type_name: str, required_labels: tuple[
 
     if not labels:
         create_sql = ", ".join(_quote_literal(label) for label in required_labels)
-        logger.info("Creating missing enum type type=%s labels=%s", enum_type_name, list(required_labels))
+        logger.info("Phase 1: creating missing enum type type=%s labels=%s", enum_type_name, list(required_labels))
         connection.execute(text(f'CREATE TYPE "{enum_type_name}" AS ENUM ({create_sql})'))
         return list(required_labels)
 
     existing = set(labels)
+    added_labels: list[str] = []
     for label in required_labels:
         if label not in existing:
-            logger.info("Adding enum label type=%s label=%s", enum_type_name, label)
+            logger.info("Phase 1: adding enum label type=%s label=%s", enum_type_name, label)
             connection.execute(text(f'ALTER TYPE "{enum_type_name}" ADD VALUE IF NOT EXISTS {_quote_literal(label)}'))
+            added_labels.append(label)
 
     updated_labels = get_pg_enum_labels(connection, enum_type_name)
-    logger.info("Enum labels after repair type=%s labels=%s", enum_type_name, updated_labels)
+    if added_labels:
+        logger.info(
+            "Phase 1 complete type=%s added_labels=%s final_labels=%s",
+            enum_type_name,
+            added_labels,
+            updated_labels,
+        )
+    else:
+        logger.info("Phase 1 complete type=%s no_new_labels final_labels=%s", enum_type_name, updated_labels)
     return updated_labels
 
 
@@ -93,6 +105,7 @@ def repair_enum_rows(connection, table_name: str, column_name: str, value_map: M
         logger.info("Skipping enum row repair table=%s column=%s reason=missing_column", table_name, column_name)
         return 0
 
+    logger.info("Phase 2: repairing enum rows table=%s column=%s mappings=%s", table_name, column_name, dict(value_map))
     total_updated = 0
     for old_value, new_value in value_map.items():
         if old_value == new_value:
@@ -121,15 +134,22 @@ def repair_enum_rows(connection, table_name: str, column_name: str, value_map: M
 
 
 def repair_database_enums(connection) -> None:
+    logger.info("Starting enum label repair phase")
     for enum_type_name, labels in ENUM_DEFINITIONS.items():
         ensure_pg_enum_type(connection, enum_type_name, labels)
+    logger.info("Completed enum label repair phase")
 
 
 def repair_enum_data(connection) -> None:
+    logger.info("Starting enum row repair phase")
     repair_enum_rows(connection, "lost_items", "status", ENUM_LEGACY_ROW_VALUES["lost_items"])
     repair_enum_rows(connection, "found_items", "status", ENUM_LEGACY_ROW_VALUES["found_items"])
+    logger.info("Completed enum row repair phase")
 
 
 def repair_database_enums_and_rows(connection) -> None:
     repair_database_enums(connection)
+    if hasattr(connection, "commit"):
+        logger.info("Committing enum label changes before row repair")
+        connection.commit()
     repair_enum_data(connection)

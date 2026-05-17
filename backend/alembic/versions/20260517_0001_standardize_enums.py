@@ -23,6 +23,7 @@ depends_on = None
 def upgrade():
     connection = op.get_bind()
     repair_database_enums(connection)
+    op.execute("COMMIT")
     repair_enum_data(connection)
 
 
