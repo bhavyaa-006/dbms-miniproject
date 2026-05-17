@@ -33,7 +33,7 @@ export default function FoundItems() {
     setError('')
     try {
       const res = await getFoundItems({ search: search || undefined, category_id: categoryId || undefined, status: status || undefined })
-      setItems(res.data)
+      setItems(Array.isArray(res.data) ? res.data : [])
       if (user) {
         try {
           const claimsRes = await getAllClaims()
@@ -44,6 +44,7 @@ export default function FoundItems() {
       }
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to load found items')
+      setItems([])
     } finally {
       setLoading(false)
     }

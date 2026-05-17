@@ -32,15 +32,28 @@ export default function Dashboard() {
     setLoading(true)
     setError('')
     try {
-      const [statsRes, lostRes, foundRes] = await Promise.all([
+      const [statsRes, lostRes, foundRes] = await Promise.allSettled([
         getDashboardStats(),
         getLostItems(),
         getFoundItems(),
       ])
-      setStats(statsRes.data)
-      setRecent({ lost: lostRes.data.slice(0, 4), found: foundRes.data.slice(0, 4) })
+
+      const safeStats = statsRes.status === 'fulfilled' && statsRes.value?.data 
+        ? statsRes.value.data 
+        : { total_lost: 0, total_found: 0, pending_claims: 0, resolved_items: 0 }
+        
+      const safeLost = lostRes.status === 'fulfilled' && Array.isArray(lostRes.value?.data) 
+        ? lostRes.value.data.slice(0, 4) 
+        : []
+        
+      const safeFound = foundRes.status === 'fulfilled' && Array.isArray(foundRes.value?.data) 
+        ? foundRes.value.data.slice(0, 4) 
+        : []
+
+      setStats(safeStats)
+      setRecent({ lost: safeLost, found: safeFound })
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to load dashboard data')
+      setError('Failed to load dashboard data')
     } finally {
       setLoading(false)
     }

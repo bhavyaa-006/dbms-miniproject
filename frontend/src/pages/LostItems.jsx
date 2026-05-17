@@ -28,9 +28,10 @@ export default function LostItems() {
     setError('')
     try {
       const res = await getLostItems({ search: search || undefined, category_id: categoryId || undefined, status: status || undefined })
-      setItems(res.data)
+      setItems(Array.isArray(res.data) ? res.data : [])
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to load lost items')
+      setItems([])
     } finally {
       setLoading(false)
     }

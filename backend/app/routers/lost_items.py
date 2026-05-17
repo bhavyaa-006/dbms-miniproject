@@ -2,6 +2,7 @@ import traceback
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -31,14 +32,21 @@ def list_lost_items(
     _: models.User = Depends(get_current_user),
 ):
     """List all lost items with optional search/filter."""
-    q = db.query(models.LostItem)
-    if search:
-        q = q.filter(models.LostItem.title.ilike(f"%{search}%"))
-    if category_id:
-        q = q.filter(models.LostItem.category_id == category_id)
-    if status:
-        q = q.filter(models.LostItem.status == status)
-    return q.order_by(models.LostItem.created_at.desc()).all()
+    try:
+        q = db.query(models.LostItem)
+        if search:
+            q = q.filter(models.LostItem.title.ilike(f"%{search}%"))
+        if category_id:
+            q = q.filter(models.LostItem.category_id == category_id)
+        if status:
+            q = q.filter(models.LostItem.status == status)
+        items = q.order_by(models.LostItem.created_at.desc()).all()
+        return JSONResponse(status_code=200, content=jsonable_encoder(items))
+    except Exception as exc:
+        import traceback
+        print(f"Lost items query failed: {str(exc)}")
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"success": False, "message": "Internal server error"})
 
 
 @router.post("", response_model=schemas.LostItemOut, status_code=201)

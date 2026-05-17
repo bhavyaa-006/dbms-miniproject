@@ -29,7 +29,7 @@ app = FastAPI(
 
 # ─── CORS ─────────────────────────────────────────────────────────────────────
 origins = [
-    "https://dbms-miniproject-sigma.vercel.app",
+    "https://dbms-miniproject-sigma.vercel.app"
 ]
 
 app.add_middleware(
