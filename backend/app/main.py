@@ -204,6 +204,62 @@ def _ensure_item_schema(connection):
             _ensure_table_column(connection, table_name, column_name, sql_type)
 
 
+def _get_pg_enum_labels(connection, enum_type_name: str):
+    result = connection.execute(
+        text(
+            """
+            SELECT enumlabel
+            FROM pg_enum e
+            JOIN pg_type t ON t.oid = e.enumtypid
+            WHERE t.typname = :enum_type_name
+            ORDER BY e.enumsortorder
+            """
+        ),
+        {"enum_type_name": enum_type_name},
+    )
+    return [row[0] for row in result.fetchall()]
+
+
+def _rename_pg_enum_value(connection, enum_type_name: str, old_value: str, new_value: str):
+    connection.execute(text(f"ALTER TYPE {enum_type_name} RENAME VALUE '{old_value}' TO '{new_value}'"))
+
+
+def _repair_pg_enum_type(connection, enum_type_name: str, mapping: dict[str, str]):
+    inspector = inspect(connection)
+    if enum_type_name not in {row[0] for row in connection.execute(text("SELECT typname FROM pg_type")).fetchall()}:
+        return
+
+    labels = _get_pg_enum_labels(connection, enum_type_name)
+    print(f"Enum {enum_type_name} labels before repair: {labels}")
+
+    for old_value, new_value in mapping.items():
+        if old_value == new_value:
+            continue
+        if old_value in labels and new_value not in labels:
+            _rename_pg_enum_value(connection, enum_type_name, old_value, new_value)
+            labels = _get_pg_enum_labels(connection, enum_type_name)
+            print(f"Renamed enum {enum_type_name} value {old_value} -> {new_value}")
+
+
+def _repair_postgres_enums(connection):
+    _repair_pg_enum_type(connection, "lostitemstatus", {
+        "lost": "LOST",
+        "found": "FOUND",
+        "closed": "CLOSED",
+    })
+    _repair_pg_enum_type(connection, "claimstatus", {
+        "pending": "PENDING",
+        "approved": "APPROVED",
+        "rejected": "REJECTED",
+    })
+    _repair_pg_enum_type(connection, "founditemstatus", {
+        "available": "AVAILABLE",
+        "claimed": "CLAIMED",
+        "returned": "RETURNED",
+        "claim_pending": "CLAIM_PENDING",
+    })
+
+
 def _repair_lost_item_statuses(connection):
     inspector = inspect(connection)
     if "lost_items" not in inspector.get_table_names():
@@ -219,6 +275,7 @@ def _repair_lost_item_statuses(connection):
 
 def ensure_database_schema():
     with engine.begin() as connection:
+        _repair_postgres_enums(connection)
         _seed_default_categories(connection)
         _ensure_item_schema(connection)
         _repair_lost_item_statuses(connection)
