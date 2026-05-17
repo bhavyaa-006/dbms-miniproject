@@ -75,22 +75,17 @@ def list_lost_items(
         return JSONResponse(status_code=500, content={"success": False, "message": "Internal server error"})
 
 
-@router.post("", response_model=schemas.LostItemOut, status_code=201)
+@router.post("", status_code=201)
 async def create_lost_item(
-    request: Request,
     payload: schemas.LostItemCreate,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Report a lost item (with optional image upload)."""
+    """Report a lost item."""
     try:
-        request_data = await request.json()
-        print("Incoming lost item payload:", request_data)
-        logger.info("Incoming lost item payload: %s", request_data)
-        logger.info("Validated lost item payload: %s", payload.model_dump())
-
-        logger.info("Attempting lost item database insert for user_id=%s", current_user.id)
-        category = _get_category_or_404(db, payload.category_id)
+        category = db.query(models.Category).filter(models.Category.id == payload.category_id).first()
+        if not category:
+            category = _get_category_or_404(db, payload.category_id)
 
         item = models.LostItem(
             title=payload.title,
@@ -99,30 +94,17 @@ async def create_lost_item(
             user_id=current_user.id,
             location=payload.location,
             date_lost=payload.date_lost,
+            status=models.LostItemStatus.LOST
         )
         db.add(item)
         db.commit()
         db.refresh(item)
-        logger.info("Lost item inserted successfully id=%s user_id=%s", item.id, current_user.id)
-        return item
-    except SQLAlchemyError as exc:
-        db.rollback()
-        print("Lost item creation error:", str(exc))
-        traceback.print_exc()
-        logger.exception("SQLAlchemy error creating lost item user_id=%s", current_user.id)
-        return JSONResponse(
-            status_code=500,
-            content={"success": False, "message": str(exc)},
-        )
+        return JSONResponse(status_code=201, content=serialize_lost_item(item))
     except Exception as exc:
         db.rollback()
-        print("Lost item creation error:", str(exc))
+        print(f"Create lost item error: {str(exc)}")
         traceback.print_exc()
-        logger.exception("Unexpected error creating lost item user_id=%s", current_user.id)
-        return JSONResponse(
-            status_code=500,
-            content={"success": False, "message": str(exc)},
-        )
+        return JSONResponse(status_code=500, content={"success": False, "message": "Internal server error"})
 
 
 @router.get("/my")
@@ -164,35 +146,44 @@ def get_lost_item(
         return JSONResponse(status_code=500, content={"success": False, "message": "Internal server error"})
 
 
-@router.put("/{item_id}", response_model=schemas.LostItemOut)
+@router.put("/{item_id}")
 async def update_lost_item(
     item_id: str,
     payload: schemas.LostItemUpdate,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    item = db.query(models.LostItem).filter(models.LostItem.id == item_id).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="Lost item not found")
-    if item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
-        raise HTTPException(status_code=403, detail="Not authorized")
+    try:
+        item = db.query(models.LostItem).filter(models.LostItem.id == item_id).first()
+        if not item:
+            return JSONResponse(status_code=404, content={"success": False, "message": "Lost item not found"})
+            
+        if item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
+            return JSONResponse(status_code=403, content={"success": False, "message": "Not authorized"})
 
-    if payload.title is not None:
-        item.title = payload.title
-    if payload.description is not None:
-        item.description = payload.description
-    if payload.category_id is not None:
-        item.category_id = _get_category_or_404(db, payload.category_id).id
-    if payload.location is not None:
-        item.location = payload.location
-    if payload.status is not None:
-        item.status = payload.status
-    if payload.date_lost is not None:
-        item.date_lost = payload.date_lost
+        if payload.title is not None:
+            item.title = payload.title
+        if payload.description is not None:
+            item.description = payload.description
+        if payload.category_id is not None:
+            category = db.query(models.Category).filter(models.Category.id == str(payload.category_id)).first()
+            if category:
+                item.category_id = category.id
+        if payload.location is not None:
+            item.location = payload.location
+        if payload.status is not None:
+            item.status = payload.status
+        if payload.date_lost is not None:
+            item.date_lost = payload.date_lost
 
-    db.commit()
-    db.refresh(item)
-    return item
+        db.commit()
+        db.refresh(item)
+        return JSONResponse(status_code=200, content=serialize_lost_item(item))
+    except Exception as exc:
+        db.rollback()
+        print(f"Update lost item error: {str(exc)}")
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"success": False, "message": "Internal server error"})
 
 
 @router.delete("/{item_id}")
@@ -201,22 +192,28 @@ def delete_lost_item(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    item = db.query(models.LostItem).filter(models.LostItem.id == item_id).first()
-    if not item:
-        raise HTTPException(status_code=404, detail="Lost item not found")
-    if item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
-        raise HTTPException(status_code=403, detail="Not authorized")
-        
-    if item.status in [models.LostItemStatus.FOUND, models.LostItemStatus.CLOSED]:
-        raise HTTPException(status_code=400, detail="Resolved items cannot be deleted")
-        
-    if item.image_url:
-        delete_upload_file(item.image_url)
-        
-    db.delete(item)
-    db.commit()
-    
-    return {
-        "success": True,
-        "message": "Lost item deleted successfully"
-    }
+    try:
+        item = db.query(models.LostItem).filter(models.LostItem.id == item_id).first()
+        if not item:
+            return JSONResponse(status_code=404, content={"success": False, "message": "Lost item not found"})
+            
+        if item.user_id != current_user.id and current_user.role != models.Role.ADMIN:
+            return JSONResponse(status_code=403, content={"success": False, "message": "Not authorized"})
+            
+        if item.status in [models.LostItemStatus.FOUND, models.LostItemStatus.CLOSED]:
+            return JSONResponse(status_code=400, content={"success": False, "message": "Resolved items cannot be deleted"})
+            
+        if item.image_url:
+            try:
+                delete_upload_file(item.image_url)
+            except Exception:
+                pass # Ignore missing files
+            
+        db.delete(item)
+        db.commit()
+        return JSONResponse(status_code=200, content={"success": True, "message": "Lost item deleted successfully"})
+    except Exception as exc:
+        db.rollback()
+        print(f"Delete lost item error: {str(exc)}")
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"success": False, "message": "Internal server error"})
