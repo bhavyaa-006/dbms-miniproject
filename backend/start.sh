@@ -22,6 +22,7 @@ DB_NAME=$(echo $DATABASE_URL | sed -E 's/.*\/(.*)/\1/')
 python -c "
 import os
 import sys
+from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 from sqlalchemy import create_engine, text
 
 db_url = os.environ.get('DATABASE_URL')
@@ -29,8 +30,14 @@ if not db_url:
     print('DATABASE_URL not set')
     sys.exit(1)
 
+parsed = urlparse(db_url)
+if parsed.scheme in {'postgresql', 'postgres'}:
+    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    query.setdefault('sslmode', 'require')
+    db_url = urlunparse(parsed._replace(query=urlencode(query)))
+
 try:
-    engine = create_engine(db_url)
+    engine = create_engine(db_url, pool_pre_ping=True)
     # Let's write the trigger directly here for the docker environment to ensure it runs
     trigger_sql = \"\"\"
     CREATE OR REPLACE FUNCTION fn_handle_claim_status_change()

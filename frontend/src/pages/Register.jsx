@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { register } from '../services/authService'
+import { getApiErrorMessage } from '../services/api'
 
 export default function Register() {
   const { login: setAuth } = useAuth()
@@ -26,7 +27,8 @@ export default function Register() {
       addToast('Account created! Welcome aboard 🎉', 'success')
       navigate('/dashboard')
     } catch (err) {
-      addToast(err.response?.data?.detail || 'Registration failed', 'error')
+      console.error('Registration API failed:', err)
+      addToast(getApiErrorMessage(err), 'error')
     } finally {
       setLoading(false)
     }

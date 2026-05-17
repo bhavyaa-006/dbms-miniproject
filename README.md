@@ -87,8 +87,13 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # Configure environment
-# Edit .env if your PostgreSQL credentials differ from defaults:
-#   DATABASE_URL=postgresql://postgres:postgres@localhost:5432/lostandfound
+# For Neon, use the pooled or direct connection string from your Neon project.
+# Ensure DATABASE_URL is set in the deployment environment.
+# Example:
+#   DATABASE_URL=postgresql://USER:PASSWORD@ep-xxxx.region.aws.neon.tech/DBNAME?sslmode=require
+
+# Frontend environment:
+#   VITE_API_URL=https://YOUR-RENDER-BACKEND.onrender.com
 ```
 
 ---
@@ -100,8 +105,8 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 
 # Tables are auto-created on first startup
-# API runs at: http://localhost:8000
-# Swagger UI:  http://localhost:8000/docs
+# API runs at your deployed backend URL
+# Swagger UI is available at /docs on the backend
 ```
 
 ---
