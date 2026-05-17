@@ -1,4 +1,6 @@
-import api from './api'
+import api, { getApiErrorMessage } from './api'
+
+export { getApiErrorMessage }
 
 // ── Categories ─────────────────────────────────────────────────────────────
 export const getCategories = async () => {
