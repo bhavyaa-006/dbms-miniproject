@@ -1,0 +1,84 @@
+import { useState } from 'react'
+import { MapPin, Calendar, User, Tag } from 'lucide-react'
+import StatusBadge from './StatusBadge'
+import { API_URL } from '../services/api'
+
+export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwner }) {
+  const [imgError, setImgError] = useState(false)
+  const imageUrl = item.image_url && !imgError
+    ? `${API_URL}${item.image_url}`
+    : null
+
+  return (
+    <div className="card group flex flex-col gap-4 hover:border-white/10 transition-all duration-200">
+      {/* Image */}
+      {imageUrl ? (
+        <div className="h-40 rounded-lg overflow-hidden bg-surface-2 -m-1">
+          <img
+            src={imageUrl}
+            alt={item.title}
+            onError={() => setImgError(true)}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      ) : (
+        <div className="h-32 rounded-lg bg-surface-2 flex items-center justify-center text-3xl">
+          {type === 'lost' ? '🔍' : '📦'}
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="font-semibold text-zinc-100 text-sm leading-snug line-clamp-2">
+          {item.title}
+        </h3>
+        <StatusBadge status={item.status} />
+      </div>
+
+      {/* Description */}
+      {item.description && (
+        <p className="text-xs text-zinc-500 line-clamp-2">{item.description}</p>
+      )}
+
+      {/* Meta */}
+      <div className="flex flex-col gap-1.5 text-xs text-zinc-500">
+        {item.location && (
+          <span className="flex items-center gap-1.5">
+            <MapPin size={11} className="flex-shrink-0 text-zinc-600" />
+            {item.location}
+          </span>
+        )}
+        <span className="flex items-center gap-1.5">
+          <Calendar size={11} className="flex-shrink-0 text-zinc-600" />
+          {type === 'lost' ? item.date_lost : item.date_found}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <Tag size={11} className="flex-shrink-0 text-zinc-600" />
+          {item.category?.name}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <User size={11} className="flex-shrink-0 text-zinc-600" />
+          {item.user?.name}
+        </span>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-2 pt-1 border-t border-white/5 mt-auto">
+        {onClaim && item.status === 'AVAILABLE' && (
+          <button id={`claim-${item.id}`} onClick={() => onClaim(item)}
+            className="btn-primary text-xs py-1.5 flex-1">
+            Claim This
+          </button>
+        )}
+        {onEdit && isOwner && (
+          <button onClick={() => onEdit(item)}
+            className="btn-secondary text-xs py-1.5">Edit</button>
+        )}
+        {onDelete && isOwner && (
+          <button onClick={() => onDelete(item.id)}
+            className="btn-danger text-xs py-1.5">Delete</button>
+        )}
+      </div>
+    </div>
+  )
+}

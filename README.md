@@ -1,32 +1,164 @@
-# DBMS Mini Project
+# Campus Lost & Found Management System
 
-A full-stack DBMS application with separate backend and frontend components.
+> A 4th Semester DBMS Mini Project | FastAPI + React + PostgreSQL
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, Vite, Tailwind CSS v3, React Router v6, Axios |
+| Backend | Python 3.10+, FastAPI, SQLAlchemy |
+| Database | PostgreSQL |
+| Auth | JWT (`python-jose`) + `passlib[bcrypt]` |
+| File Upload | `python-multipart` (local `uploads/` folder) |
+
+---
 
 ## Project Structure
 
 ```
 dbms-miniproject/
-├── backend/          (Node.js/Express API)
-├── frontend/         (React/Vue frontend)
-├── database/         (SQL scripts and migrations)
-└── docs/            (Documentation and diagrams)
+├── backend/
+│   ├── app/
+│   │   ├── main.py          # FastAPI entry point
+│   │   ├── database.py      # SQLAlchemy engine + session
+│   │   ├── models.py        # ORM models (6 tables)
+│   │   ├── schemas.py       # Pydantic schemas
+│   │   ├── security.py      # JWT + bcrypt
+│   │   ├── dependencies.py  # Auth guards
+│   │   ├── seed.py          # Sample data seeder
+│   │   ├── routers/         # API route handlers
+│   │   └── utils/           # File upload helper
+│   ├── uploads/             # Uploaded images (auto-created)
+│   ├── requirements.txt
+│   └── .env
+├── frontend/
+│   ├── src/
+│   │   ├── pages/           # Route pages
+│   │   ├── components/      # Reusable UI components
+│   │   ├── layouts/         # Auth + Dashboard layouts
+│   │   ├── services/        # Axios API calls
+│   │   └── context/         # Auth + Toast context
+│   ├── index.html
+│   └── package.json
+├── database/
+│   ├── trigger.sql          # PostgreSQL trigger
+│   └── seed.sql             # Raw SQL seed data
+└── docs/                    # ER diagram, normalization, SQL queries, API docs
 ```
 
-## Getting Started
+---
 
-### Backend Setup
+## Setup Guide
+
+### Prerequisites
+- Python 3.10+
+- Node.js 18+
+- PostgreSQL 14+ (running locally)
+
+---
+
+### Step 1 — Create Database
+
+```sql
+-- In psql or pgAdmin:
+CREATE DATABASE lostandfound;
 ```
+
+---
+
+### Step 2 — Backend Setup
+
+```bash
 cd backend
-npm install
-npm start
+
+# Create virtual environment
+python -m venv venv
+
+# Activate (Windows)
+venv\Scripts\activate
+
+# Activate (Mac/Linux)
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure environment
+# Edit .env if your PostgreSQL credentials differ from defaults:
+#   DATABASE_URL=postgresql://postgres:postgres@localhost:5432/lostandfound
 ```
 
-### Frontend Setup
+---
+
+### Step 3 — Start Backend
+
+```bash
+# From backend/ directory (with venv active)
+uvicorn app.main:app --reload
+
+# Tables are auto-created on first startup
+# API runs at: http://localhost:8000
+# Swagger UI:  http://localhost:8000/docs
 ```
+
+---
+
+### Step 4 — Seed Sample Data
+
+```bash
+# In a new terminal (with venv active, inside backend/)
+python -m app.seed
+```
+
+Demo accounts created:
+| Role | Email | Password |
+|---|---|---|
+| Admin | admin@campus.edu | admin123 |
+| Student | alice@campus.edu | alice123 |
+| Student | bob@campus.edu | bob123 |
+| Student | carol@campus.edu | carol123 |
+
+---
+
+### Step 5 — Apply PostgreSQL Trigger (DBMS Concept Demo)
+
+```bash
+# Apply the trigger from psql:
+psql -U postgres -d lostandfound -f database/trigger.sql
+```
+
+---
+
+### Step 6 — Frontend Setup
+
+```bash
 cd frontend
 npm install
-npm start
+npm run dev
+
+# App runs at: http://localhost:5173
 ```
 
-## Documentation
-See [docs/](docs/) folder for architecture, database schemas, and design documents.
+---
+
+## Features
+
+- **User Auth** — Register/Login with JWT, bcrypt password hashing, Student/Admin roles
+- **Lost Items** — Report, view, search, filter by category/status, delete
+- **Found Items** — Report with image, search, filter, claim
+- **Claim Workflow** — Student submits claim → Admin approves/rejects → Trigger auto-updates found item status
+- **Notifications** — Real-time status updates, mark read/unread
+- **Dashboard** — Stats overview (lost, found, pending claims, reunited items)
+- **Admin Panel** — View and manage all claims
+
+## DBMS Concepts Demonstrated
+
+- Normalization (1NF, 2NF, 3NF) — see `docs/NORMALIZATION.md`
+- ER Diagram with all relationships — see `docs/ER_DIAGRAM.md`
+- PostgreSQL Trigger on `claims` table — see `database/trigger.sql`
+- Complex SQL Queries (joins, aggregates, subqueries) — see `docs/SQL_QUERIES.md`
+- Indexes on frequently queried columns
+- Foreign key constraints and cascading deletes
