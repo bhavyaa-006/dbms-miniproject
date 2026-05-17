@@ -38,11 +38,10 @@ export default function ReportLost() {
     e.preventDefault()
     setLoading(true)
     try {
-      const selectedCategory = categories.find(category => category.id === form.category_id)
       const payload = {
         title: form.title?.trim(),
         description: form.description?.trim() || null,
-        category_id: selectedCategory?.id || '',
+        category_id: form.category_id,
         location: form.location?.trim() || null,
         date_lost: form.date_lost,
       }

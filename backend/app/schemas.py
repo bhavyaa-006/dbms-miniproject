@@ -2,6 +2,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from datetime import datetime, date
 from enum import Enum
+from uuid import UUID
 from .category_constants import PREDEFINED_CATEGORIES
 
 
@@ -70,36 +71,28 @@ class CategoryOut(BaseModel):
 class LostItemCreate(BaseModel):
     title: str
     description: Optional[str] = None
-    category_id: str
+    category_id: UUID
     location: Optional[str] = None
     date_lost: date
 
     @field_validator("category_id")
     @classmethod
-    def validate_category_id(cls, value: str) -> str:
-        cleaned = value.strip()
-        if not cleaned:
-            raise ValueError("Category is required")
-        return cleaned
+    def validate_category_id(cls, value: UUID) -> UUID:
+        return value
 
 
 class LostItemUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
-    category_id: Optional[str] = None
+    category_id: Optional[UUID] = None
     location: Optional[str] = None
     status: Optional[LostItemStatus] = None
     date_lost: Optional[date] = None
 
     @field_validator("category_id")
     @classmethod
-    def validate_category_id(cls, value: Optional[str]) -> Optional[str]:
-        if value is None:
-            return value
-        cleaned = value.strip()
-        if not cleaned:
-            raise ValueError("Category is required")
-        return cleaned
+    def validate_category_id(cls, value: Optional[UUID]) -> Optional[UUID]:
+        return value
 
 
 class LostItemOut(BaseModel):
@@ -121,36 +114,28 @@ class LostItemOut(BaseModel):
 class FoundItemCreate(BaseModel):
     title: str
     description: Optional[str] = None
-    category_id: str
+    category_id: UUID
     location: Optional[str] = None
     date_found: date
 
     @field_validator("category_id")
     @classmethod
-    def validate_category_id(cls, value: str) -> str:
-        cleaned = value.strip()
-        if not cleaned:
-            raise ValueError("Category is required")
-        return cleaned
+    def validate_category_id(cls, value: UUID) -> UUID:
+        return value
 
 
 class FoundItemUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
-    category_id: Optional[str] = None
+    category_id: Optional[UUID] = None
     location: Optional[str] = None
     status: Optional[FoundItemStatus] = None
     date_found: Optional[date] = None
 
     @field_validator("category_id")
     @classmethod
-    def validate_category_id(cls, value: Optional[str]) -> Optional[str]:
-        if value is None:
-            return value
-        cleaned = value.strip()
-        if not cleaned:
-            raise ValueError("Category is required")
-        return cleaned
+    def validate_category_id(cls, value: Optional[UUID]) -> Optional[UUID]:
+        return value
 
 
 class FoundItemOut(BaseModel):

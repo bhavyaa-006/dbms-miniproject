@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/lost-items", tags=["Lost Items"])
 
 
-def _get_category_or_404(db: Session, category_id: str) -> models.Category:
-    category = db.query(models.Category).filter(models.Category.id == category_id).first()
+def _get_category_or_404(db: Session, category_id) -> models.Category:
+    category = db.query(models.Category).filter(models.Category.id == str(category_id)).first()
     if not category:
         raise HTTPException(status_code=422, detail="Invalid category")
     return category
