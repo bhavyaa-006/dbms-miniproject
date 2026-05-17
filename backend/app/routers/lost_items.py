@@ -7,7 +7,6 @@ from typing import List, Optional
 from .. import models, schemas
 from ..dependencies import get_db, get_current_user
 from ..utils.file_upload import delete_upload_file
-from ..utils.serializers import serialize_lost_item
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,16 +17,44 @@ router = APIRouter(prefix="/lost-items", tags=["Lost Items"])
 def _log_loaded_item(prefix: str, item: models.LostItem) -> None:
     category = getattr(item, "category", None)
     user = getattr(item, "user", None)
-    claims = getattr(item, "claims", None) if hasattr(item, "claims") else None
-    user_claims = getattr(user, "claims", None) if user is not None else None
-    user_notifications = getattr(user, "notifications", None) if user is not None else None
     print(
         f"{prefix} lost_item id={getattr(item, 'id', None)} status={getattr(item, 'status', None)} "
         f"category_id={getattr(item, 'category_id', None)} user_id={getattr(item, 'user_id', None)} "
-        f"category_loaded={category is not None} user_loaded={user is not None} claims_loaded={claims is not None} "
-        f"user_claims_count={len(user_claims) if user_claims is not None else 0} "
-        f"user_notifications_count={len(user_notifications) if user_notifications is not None else 0}"
+        f"category_loaded={category is not None} user_loaded={user is not None}"
     )
+
+
+def _safe_iso(value):
+    if value is None:
+        return None
+    return value.isoformat() if hasattr(value, "isoformat") else str(value)
+
+
+def _safe_enum_value(value):
+    if value is None:
+        return None
+    return value.value if hasattr(value, "value") else str(value)
+
+
+def _serialize_lost_item_for_list(item: models.LostItem) -> dict:
+    category = getattr(item, "category", None)
+    user = getattr(item, "user", None)
+    return {
+        "id": str(item.id) if getattr(item, "id", None) else None,
+        "title": getattr(item, "title", None),
+        "description": getattr(item, "description", None),
+        "location": getattr(item, "location", None),
+        "status": _safe_enum_value(getattr(item, "status", None)),
+        "created_at": _safe_iso(getattr(item, "created_at", None)),
+        "category": {
+            "id": str(category.id) if getattr(category, "id", None) else None,
+            "name": getattr(category, "name", None),
+        } if category else None,
+        "user": {
+            "id": str(user.id) if getattr(user, "id", None) else None,
+            "name": getattr(user, "name", None),
+        } if user else None,
+    }
 
 
 def _get_category_or_404(db: Session, category_id) -> models.Category:
@@ -61,12 +88,12 @@ def list_lost_items(
         print(f"Fetched {len(items)} lost items")
         for item in items:
             _log_loaded_item("LIST", item)
-        return JSONResponse(status_code=200, content=[serialize_lost_item(item) for item in items])
+        return JSONResponse(status_code=200, content=[_serialize_lost_item_for_list(item) for item in items])
     except Exception as exc:
         db.rollback()
-        print(f"Lost items query failed: {str(exc)}")
+        print(f"GET /lost-items ERROR: {str(exc)}")
         traceback.print_exc()
-        return JSONResponse(status_code=500, content={"success": False, "message": "Internal server error"})
+        return JSONResponse(status_code=500, content={"success": False, "message": str(exc)})
 
 
 @router.post("", status_code=201)
