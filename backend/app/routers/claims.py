@@ -2,7 +2,7 @@ import uuid
 import logging
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 from .. import models, schemas
 from ..dependencies import get_db, get_current_user, admin_only
