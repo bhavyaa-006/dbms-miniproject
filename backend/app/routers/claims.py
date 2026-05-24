@@ -23,8 +23,6 @@ def _create_notification(db: Session, recipient_user_id: str, message: str, **kw
 
 
 def _claims_query(db: Session):
-    from sqlalchemy.orm import joinedload
-
     return db.query(models.Claim).options(
         joinedload(models.Claim.found_item).joinedload(models.FoundItem.category),
         joinedload(models.Claim.found_item).joinedload(models.FoundItem.user),
@@ -81,16 +79,15 @@ def submit_claim(
             related_item_id=found_item.id,
         )
         db.commit()
-        claim = _claims_query(db).filter(models.Claim.id == claim.id).first()
+        claim.found_item = found_item
+        claim.claimant = current_user
         return JSONResponse(status_code=201, content=serialize_claim(claim))
     except HTTPException:
         db.rollback()
         raise
     except Exception as exc:
         db.rollback()
-        import traceback
-        print(str(exc))
-        traceback.print_exc()
+        logger.exception("Failed to submit claim for found_item_id=%s user_id=%s", payload.found_item_id, current_user.id)
         return JSONResponse(status_code=500, content={"success": False, "message": str(exc), "detail": str(exc)})
 
 

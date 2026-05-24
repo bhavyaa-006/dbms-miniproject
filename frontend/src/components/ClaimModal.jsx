@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { submitClaim } from '../services/claimService'
+import { getApiErrorMessage } from '../services/api'
 import { useToast } from '../context/ToastContext'
 
 export default function ClaimModal({ item, onClose, onSuccess }) {
@@ -10,15 +11,20 @@ export default function ClaimModal({ item, onClose, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!description.trim()) return
+    const proof = description.trim()
+    if (!proof || loading) return
     setLoading(true)
     try {
-      await submitClaim({ found_item_id: item.id, description })
+      await submitClaim({ found_item_id: item.id, description: proof })
       addToast('Claim submitted! Wait for admin approval.', 'success')
-      onSuccess()
       onClose()
+      if (typeof onSuccess === 'function') {
+        void onSuccess().catch(err => {
+          console.error('Failed to refresh items after claim submission', err)
+        })
+      }
     } catch (err) {
-      addToast(err.response?.data?.detail || 'Failed to submit claim', 'error')
+      addToast(getApiErrorMessage(err) || 'Failed to submit claim', 'error')
     } finally {
       setLoading(false)
     }
