@@ -1,5 +1,14 @@
 # Campus Lost & Found Management System
 
+<!-- Repository Badges -->
+<p align="left">
+  <img src="https://img.shields.io/github/repo-size/bhavyaa-006/dbms-miniproject?style=flat-square" alt="Repo Size">
+  <img src="https://img.shields.io/github/contributors/bhavyaa-006/dbms-miniproject?style=flat-square&color=blue" alt="Contributors">
+  <img src="https://img.shields.io/badge/Backend-FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI">
+  <img src="https://img.shields.io/badge/Database-PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/Frontend-React-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React">
+</p>
+
 A centralized web-based platform designed to simplify the process of reporting, tracking, and claiming lost and found items within a college campus.
 
 The system allows students to report lost items, upload found item details, submit ownership claims, and receive notifications regarding claim verification. The project was developed as a DBMS mini project with focus on database design, normalization, relational mapping, and backend integration.
@@ -8,9 +17,11 @@ The system allows students to report lost items, upload found item details, subm
 
 # Live Demo
 
-Project Deployment:
+**Project Deployment:** [https://dbms-miniproject-sigma.vercel.app/](https://dbms-miniproject-sigma.vercel.app/)
 
-https://dbms-miniproject-sigma.vercel.app/
+<p align="center">
+  <img src="docs/images/dashboard-preview.png" alt="Application Dashboard Preview" width="800">
+</p>
 
 ---
 
@@ -42,7 +53,6 @@ The Campus Lost & Found Management System solves these problems by providing a s
 # Features
 
 ## User Authentication
-
 - Secure login and registration
 - JWT-based authentication
 - Role-based access system
@@ -50,16 +60,18 @@ The Campus Lost & Found Management System solves these problems by providing a s
 ---
 
 ## Lost Item Management
-
 - Report lost items
 - Add item descriptions and locations
 - Upload item images
 - Track item status
 
+<p align="center">
+  <img src="docs/images/report-lost.png" alt="Report Lost Item Interface" width="700">
+</p>
+
 ---
 
 ## Found Item Management
-
 - Report found items
 - Store recovery location and date
 - Upload images for verification
@@ -68,16 +80,18 @@ The Campus Lost & Found Management System solves these problems by providing a s
 ---
 
 ## Claim Verification System
-
 - Submit ownership claims
 - Provide proof descriptions
 - Approve or reject claims
 - Automatic item status updates
 
+<p align="center">
+  <img src="docs/images/claim-verification.png" alt="Claim Verification Dashboard" width="700">
+</p>
+
 ---
 
 ## Notification System
-
 - Claim status notifications
 - Read/unread notification tracking
 - User-specific alerts
@@ -85,7 +99,6 @@ The Campus Lost & Found Management System solves these problems by providing a s
 ---
 
 ## Dashboard and Analytics
-
 - Total lost and found item statistics
 - Pending claim monitoring
 - Category-wise analysis
@@ -97,13 +110,13 @@ The Campus Lost & Found Management System solves these problems by providing a s
 
 | Technology | Purpose |
 |------------|---------|
-| FastAPI | Backend framework |
-| PostgreSQL | Relational database |
-| SQLAlchemy | ORM |
-| React | Frontend |
-| Tailwind CSS | UI styling |
-| JWT | Authentication |
-| Docker | Containerization |
+| **FastAPI** | Backend framework |
+| **PostgreSQL** | Relational database |
+| **SQLAlchemy** | ORM (Object Relational Mapper) |
+| **React** | Frontend interface |
+| **Tailwind CSS** | UI styling and layout |
+| **JWT** | Secure token authentication |
+| **Docker** | Application containerization |
 
 ---
 
@@ -112,51 +125,52 @@ The Campus Lost & Found Management System solves these problems by providing a s
 The database is normalized up to Third Normal Form (3NF) to reduce redundancy and maintain consistency.
 
 Main tables used in the project:
-
-- users
-- lost_items
-- found_items
-- claims
-- notifications
-- categories
+- `users`
+- `lost_items`
+- `found_items`
+- `claims`
+- `notifications`
+- `categories`
 
 The schema uses:
-
-- Primary Keys
-- Foreign Keys
-- Constraints
-- Triggers
-- Views
-- Indexing
+- Primary Keys and Foreign Keys
+- Database Constraints and Triggers
+- Core Views and Performance Indexing
 
 ---
 
 # Entity Relationships
 
-The project follows a relational database structure:
-
+The project follows a structured relational database architecture:
 - One user can report multiple lost items
 - One user can report multiple found items
 - One user can submit multiple claims
 - One found item can receive multiple claims
-- Categories are shared across items
+- Categories are shared dynamically across items
+
+### ER Diagram
+<p align="center">
+  <img src="docs/images/er-diagram.png" alt="Entity Relationship Diagram" width="700">
+</p>
 
 ---
 
 # API Architecture
 
-The backend follows REST API principles.
+The backend follows clean REST API principles. All protected routes require a valid JWT bearer token.
+
+### System Architecture Layout
+<p align="center">
+  <img src="docs/images/architecture-diagram.png" alt="System Architecture Diagram" width="600">
+</p>
 
 Main API modules include:
-
 - Authentication APIs
 - Lost item APIs
 - Found item APIs
 - Claim APIs
 - Notification APIs
 - Dashboard APIs
-
-All protected routes use JWT authentication.
 
 ---
 
@@ -180,144 +194,7 @@ project-root/
 │   └── assets/
 │
 ├── docs/
+│   └── images/          # Save your README screenshot assets here
 ├── docker-compose.yml
 ├── requirements.txt
 └── README.md
-```
-
----
-
-# Installation and Setup
-
-## Clone the Repository
-
-```bash
-git clone https://github.com/bhavyaa-006/dbms-miniproject.git
-```
-
----
-
-## Backend Setup
-
-```bash
-cd backend
-pip install -r requirements.txt
-```
-
----
-
-## Configure Environment Variables
-
-Create a `.env` file:
-
-```env
-DATABASE_URL=postgresql://postgres:password@localhost:5432/campus_lost_found
-SECRET_KEY=your_secret_key
-```
-
----
-
-## Run PostgreSQL
-
-Make sure PostgreSQL is installed and running.
-
-Create the database:
-
-```sql
-CREATE DATABASE campus_lost_found;
-```
-
----
-
-## Start Backend Server
-
-```bash
-uvicorn main:app --reload
-```
-
-Backend runs on:
-
-```text
-http://localhost:8000
-```
-
----
-
-## Frontend Setup
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend runs on:
-
-```text
-http://localhost:5173
-```
-
----
-
-# Sample Workflow
-
-1. User registers and logs in
-2. User reports a lost item
-3. Another user reports a found item
-4. Original owner submits a claim
-5. Admin verifies the claim
-6. Item status changes to claimed
-7. Notification is sent to the user
-
----
-
-# DBMS Concepts Implemented
-
-- Entity Relationship Model
-- Normalization (up to 3NF)
-- Primary and Foreign Keys
-- Joins
-- Aggregate Functions
-- Subqueries
-- Views
-- Indexing
-- Triggers
-- Transactions
-- Stored Procedures
-
----
-
-# Security Features
-
-- Password hashing
-- JWT authentication
-- Protected API routes
-- Input validation using Pydantic
-- Secure database transactions
-
----
-
-# Future Improvements
-
-- Real-time notifications
-- AI-based item matching
-- QR code verification
-- Email integration
-- Mobile application support
-- Admin analytics dashboard
-
----
-
-# Conclusion
-
-The Campus Lost & Found Management System demonstrates the practical implementation of database management concepts in a real-world application.
-
-The project combines:
-
-- Structured relational database design
-- RESTful backend development
-- Secure authentication
-- Efficient claim verification workflow
-- Clean and responsive frontend design
-
-It serves as a complete DBMS mini project showcasing database architecture, normalization, SQL operations, API integration, and modern web development practices.
