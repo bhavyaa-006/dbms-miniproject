@@ -141,10 +141,7 @@ The project follows a structured relational database architecture:
 - One found item can receive multiple claims
 - Categories are shared dynamically across items
 
-### ER Diagram
-<p align="center">
-  <img src="docs/images/er-diagram.png" alt="Entity Relationship Diagram" width="700">
-</p>
+
 
 ---
 
