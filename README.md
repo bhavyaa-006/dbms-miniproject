@@ -149,10 +149,6 @@ The project follows a structured relational database architecture:
 
 The backend follows clean REST API principles. All protected routes require a valid JWT bearer token.
 
-### System Architecture Layout
-<p align="center">
-  <img src="docs/images/architecture-diagram.png" alt="System Architecture Diagram" width="600">
-</p>
 
 Main API modules include:
 - Authentication APIs
