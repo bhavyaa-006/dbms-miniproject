@@ -19,9 +19,7 @@ The system allows students to report lost items, upload found item details, subm
 
 **Project Deployment:** [https://dbms-miniproject-sigma.vercel.app/](https://dbms-miniproject-sigma.vercel.app/)
 
-<p align="center">
-  <img src="docs/images/dashboard-preview.png" alt="Application Dashboard Preview" width="800">
-</p>
+
 
 ---
 
@@ -65,9 +63,6 @@ The Campus Lost & Found Management System solves these problems by providing a s
 - Upload item images
 - Track item status
 
-<p align="center">
-  <img src="docs/images/report-lost.png" alt="Report Lost Item Interface" width="700">
-</p>
 
 ---
 
@@ -85,9 +80,7 @@ The Campus Lost & Found Management System solves these problems by providing a s
 - Approve or reject claims
 - Automatic item status updates
 
-<p align="center">
-  <img src="docs/images/claim-verification.png" alt="Claim Verification Dashboard" width="700">
-</p>
+
 
 ---
 
