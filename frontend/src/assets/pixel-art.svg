@@ -1,20 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
-  <rect width="96" height="96" fill="transparent"/>
-  <!-- simple pixel cluster art -->
-  <g fill="#7C5CFF">
-    <rect x="8" y="56" width="16" height="16"/>
-    <rect x="24" y="56" width="16" height="16"/>
-    <rect x="40" y="56" width="16" height="16"/>
-    <rect x="24" y="40" width="16" height="16"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="transparent"/>
+  <!-- white pixel flower (simple pixel-art) -->
+  <!-- center -->
+  <g fill="#FFD166">
+    <rect x="56" y="56" width="16" height="16"/>
+  </g>
+  <!-- petals (white) -->
+  <g fill="#FFFFFF">
+    <rect x="56" y="36" width="16" height="16"/>
+    <rect x="56" y="76" width="16" height="16"/>
+    <rect x="36" y="56" width="16" height="16"/>
+    <rect x="76" y="56" width="16" height="16"/>
     <rect x="40" y="40" width="16" height="16"/>
-  </g>
-  <g fill="#4CC9F0">
-    <rect x="56" y="64" width="16" height="16"/>
-    <rect x="72" y="48" width="16" height="16"/>
-    <rect x="56" y="48" width="8" height="8"/>
-  </g>
-  <g fill="#9D87FF">
-    <rect x="8" y="72" width="8" height="8"/>
-    <rect x="16" y="72" width="8" height="8"/>
+    <rect x="72" y="40" width="16" height="16"/>
+    <rect x="40" y="72" width="16" height="16"/>
+    <rect x="72" y="72" width="16" height="16"/>
   </g>
 </svg>

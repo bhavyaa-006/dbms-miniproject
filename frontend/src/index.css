@@ -19,8 +19,8 @@
     margin: 0;
     min-height: 100vh;
     overflow-x: hidden;
-    /* Deep midnight gradient with decorative pixel-art at bottom-left */
-    background: url('/src/assets/pixel-art.svg') left 12px bottom 12px / 96px 96px no-repeat, radial-gradient(circle at top, #0B1020 0%, #060816 100%);
+    /* Deep midnight gradient with decorative white pixel-flower at bottom-right (medium) */
+    background: url('/src/assets/pixel-art.svg') right 12px bottom 12px / 128px 128px no-repeat, radial-gradient(circle at top, #0B1020 0%, #060816 100%);
     position: relative;
   }
 
