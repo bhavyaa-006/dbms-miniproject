@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { getCategories, createLostItem, getApiErrorMessage } from '../services/itemService'
 import { useToast } from '../context/ToastContext'
 import PageState from '../components/PageState'
-import { Upload } from 'lucide-react'
+import { Upload, Terminal } from 'lucide-react'
 
 export default function ReportLost() {
   const navigate = useNavigate()
@@ -29,7 +29,7 @@ export default function ReportLost() {
         setCategories(Array.isArray(res.data) ? res.data : [])
       } catch (err) {
         console.error('Failed to load categories:', err?.response?.data || err)
-        setCategoryError(err.response?.data?.detail || err.response?.data?.message || 'Failed to load categories')
+        setCategoryError(err.response?.data?.detail || err.response?.data?.message || 'FAILED_TO_LOAD_CATEGORIES')
       } finally {
         setCategoryLoading(false)
       }
@@ -51,11 +51,11 @@ export default function ReportLost() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.category_id) {
-      setCategoryValidationError('Please select a category')
+      setCategoryValidationError('CATEGORY_REQUIRED')
       return
     }
     if (categoryLoading || categoryError || categoryUnavailable) {
-      addToast('Categories are not available right now', 'error')
+      addToast('CATEGORIES_UNAVAILABLE', 'error')
       return
     }
     setCategoryValidationError('')
@@ -66,13 +66,12 @@ export default function ReportLost() {
       if (image) fd.append('image', image)
 
       if (!form.title || !form.date_lost || !form.category_id) {
-        addToast('Title, category, and date lost are required', 'error')
+        addToast('MISSING_REQUIRED_FIELDS', 'error')
         return
       }
 
-      console.log('Submitting lost item payload:', Object.fromEntries(fd.entries()))
       await createLostItem(fd)
-      addToast('Lost item reported successfully!', 'success')
+      addToast('REPORT_SUBMITTED_SUCCESSFULLY', 'success')
       navigate('/lost-items')
     } catch (error) {
       console.error('Lost item submit failed:', error?.response?.data || error)
@@ -80,7 +79,7 @@ export default function ReportLost() {
         error?.response?.data?.detail ||
         error?.response?.data?.message ||
         getApiErrorMessage(error) ||
-        'Failed to report lost item',
+        'REPORT_SUBMISSION_FAILED',
         'error'
       )
     } finally {
@@ -89,84 +88,84 @@ export default function ReportLost() {
   }
 
   return (
-    <div className="w-full max-w-lg space-y-5">
-      <div>
-        <h1 className="text-lg font-semibold text-zinc-100">Report Lost Item</h1>
-        <p className="text-xs text-zinc-500 mt-0.5">Fill in the details to help others find your item.</p>
+    <div className="w-full max-w-2xl space-y-6">
+      <div className="bg-surface-2 border-2 border-border p-4 shadow-pixel-sm">
+        <h1 className="text-xl font-pixel text-text-primary drop-shadow-[1px_1px_0px_#000]">INITIATE_LOST_PROTOCOL</h1>
+        <p className="text-sm font-vt text-accent-secondary mt-1 tracking-widest uppercase">&gt; Submit details to the lost item registry.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="card space-y-4">
+      <form onSubmit={handleSubmit} className="card space-y-6 p-6">
         {categoryUnavailable && (
           <PageState
             compact
-            icon={Upload}
-            title="No categories available"
-            description="Create reference categories before submitting a lost item report."
+            icon={Terminal}
+            title="NO CATEGORIES AVAILABLE"
+            description="Initialize categories database before proceeding."
           />
         )}
 
         {categoryError && (
-          <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-300">
-            {categoryError}
+          <div className="bg-danger/20 border-2 border-danger p-3 text-xs font-vt uppercase tracking-widest text-danger">
+            [ SYSTEM_ERROR: {categoryError} ]
           </div>
         )}
 
         <div>
-          <label className="label">Item Title *</label>
+          <label className="label text-accent drop-shadow-[1px_1px_0px_#000]">&gt; TARGET_IDENTIFIER (TITLE) *</label>
           <input name="title" required value={form.title} onChange={handleChange}
-            placeholder="Item title" className="input" />
+            placeholder="ENTER TITLE" className="input uppercase" />
         </div>
 
         <div>
-          <label className="label">Description</label>
+          <label className="label text-accent drop-shadow-[1px_1px_0px_#000]">&gt; TARGET_DESCRIPTION</label>
           <textarea name="description" rows={3} value={form.description} onChange={handleChange}
-            placeholder="Describe the item" className="input resize-none text-sm" />
+            placeholder="ENTER DESCRIPTION" className="input resize-none uppercase" />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div>
-            <label className="label">Category *</label>
+            <label className="label text-accent drop-shadow-[1px_1px_0px_#000]">&gt; CATEGORY_CLASS *</label>
             <select
               name="category_id"
               value={form.category_id}
               onChange={(e) => { handleChange(e); setCategoryValidationError('') }}
-              className="input"
+              className="input uppercase bg-surface"
               disabled={categoryLoading || !!categoryError || categoryUnavailable}
               required
             >
-              <option value="">{categoryLoading ? 'Loading categories...' : 'Select Category'}</option>
+              <option value="">{categoryLoading ? 'LOADING...' : 'SELECT_CLASS'}</option>
               {Array.isArray(categories) && categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
             </select>
-            {categoryValidationError && <p className="mt-1 text-xs text-red-300">{categoryValidationError}</p>}
+            {categoryValidationError && <p className="mt-1 text-xs font-vt text-danger">{categoryValidationError}</p>}
           </div>
           <div>
-            <label className="label">Date Lost *</label>
-            <input name="date_lost" type="date" required value={form.date_lost} onChange={handleChange} className="input" />
+            <label className="label text-accent drop-shadow-[1px_1px_0px_#000]">&gt; TIME_LOST *</label>
+            <input name="date_lost" type="date" required value={form.date_lost} onChange={handleChange} className="input uppercase" />
           </div>
         </div>
 
         <div>
-          <label className="label">Location</label>
+          <label className="label text-accent drop-shadow-[1px_1px_0px_#000]">&gt; LAST_KNOWN_LOCATION</label>
           <input name="location" value={form.location} onChange={handleChange}
-            placeholder="Where did you lose it?" className="input" />
+            placeholder="ENTER LOCATION" className="input uppercase" />
         </div>
 
         <div>
-          <label className="label">Image (recommended)</label>
-          <label className="flex flex-col items-center gap-2 py-6 border-2 border-dashed border-white/10
-                             rounded-xl cursor-pointer hover:border-accent/40 transition-colors">
+          <label className="label text-accent drop-shadow-[1px_1px_0px_#000]">&gt; VISUAL_DATA_UPLOAD</label>
+          <label className="flex flex-col items-center gap-3 py-8 border-2 border-dashed border-border bg-background
+                             cursor-pointer hover:border-accent hover:bg-surface transition-colors shadow-pixel-sm hover:shadow-none hover:translate-y-[2px]">
             {preview
-              ? <img src={preview} alt="preview" className="h-24 w-auto rounded-lg object-contain" />
-              : <><Upload size={20} className="text-zinc-500" /><span className="text-xs text-zinc-500">Click to upload image</span></>
+              ? <img src={preview} alt="preview" className="h-32 w-auto object-contain border-2 border-border" />
+              : <><Upload size={24} className="text-accent" /><span className="text-sm font-vt tracking-widest uppercase text-text-secondary">CLICK TO UPLOAD IMAGE DATA</span></>
             }
             <input type="file" accept="image/*" onChange={handleImage} className="hidden" />
           </label>
         </div>
 
-        <div className="flex flex-col-reverse gap-3 pt-1 sm:flex-row">
-          <button type="button" onClick={() => navigate(-1)} className="btn-secondary flex-1">Cancel</button>
-          <button type="submit" disabled={loading || categoryUnavailable} className="btn-primary flex-1">
-            {loading ? 'Submitting...' : 'Submit Report'}
+        <div className="flex flex-col-reverse gap-4 pt-4 border-t-2 border-border sm:flex-row">
+          <button type="button" onClick={() => navigate(-1)} className="btn-secondary flex-1">ABORT</button>
+          <button type="submit" disabled={loading || categoryUnavailable} className="btn-primary flex-1 border-danger bg-danger/20 hover:bg-danger text-danger hover:text-white shadow-pixel-danger">
+            {loading ? 'UPLOADING...' : 'EXECUTE_REPORT'}
           </button>
         </div>
       </form>

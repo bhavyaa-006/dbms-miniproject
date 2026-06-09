@@ -12,19 +12,20 @@ export default function DashboardLayout() {
   }, [pathname])
 
   return (
-    <div className="flex min-h-screen bg-background overflow-x-hidden">
+    <div className="flex min-h-screen overflow-x-hidden bg-background">
+      {/* Background overlays are in index.css */}
       {mobileSidebarOpen && (
         <button
           type="button"
           aria-label="Close navigation menu"
           onClick={() => setMobileSidebarOpen(false)}
-          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          className="fixed inset-0 z-30 bg-background/80 backdrop-blur-sm md:hidden"
         />
       )}
       <Sidebar mobileOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden relative z-10">
         <Topbar onMenuClick={() => setMobileSidebarOpen(prev => !prev)} />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

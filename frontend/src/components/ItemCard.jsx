@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MapPin, Calendar, User, Tag, CheckCircle, XCircle } from 'lucide-react'
+import { MapPin, Calendar, User, Tag, CheckSquare, XSquare } from 'lucide-react'
 import StatusBadge from './StatusBadge'
 import { API_URL } from '../services/api'
+import Card from './Card'
 
 export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwner, itemClaims, onApproveClaim, onRejectClaim, updatingClaim }) {
   const [imgError, setImgError] = useState(false)
@@ -15,26 +16,26 @@ export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwne
     : item.status === 'CLAIMED'
 
   return (
-    <div className="card group flex h-full flex-col gap-4 hover:border-white/10 transition-all duration-200 relative">
+    <Card className="group flex h-full flex-col gap-4 hover:shadow-glow transition-all duration-200 relative">
       {/* Image */}
       {imageUrl ? (
-        <div className="h-36 sm:h-40 rounded-lg overflow-hidden bg-surface-2 -m-1">
+        <div className="h-36 sm:h-40 rounded-lg overflow-hidden bg-black -m-1 border border-white/3">
           <img
             src={imageUrl}
             alt={item.title}
             onError={() => setImgError(true)}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover rounded-sm grayscale-[20%] group-hover:grayscale-0 transition-all"
           />
         </div>
       ) : (
-        <div className="h-32 rounded-lg bg-surface-2 flex items-center justify-center text-3xl">
+        <div className="h-32 rounded-lg bg-black flex items-center justify-center text-3xl border border-white/5">
           {type === 'lost' ? '🔍' : '📦'}
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="font-semibold text-zinc-100 text-sm leading-snug line-clamp-2">
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="font-semibold text-zinc-100 text-sm leading-snug line-clamp-2" style={{fontFamily: 'Inter, system-ui'}}>
           {item.title}
         </h3>
         <StatusBadge status={item.status} />
@@ -42,90 +43,90 @@ export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwne
 
       {/* Description */}
       {item.description && (
-        <p className="text-xs text-zinc-500 line-clamp-2">{item.description}</p>
+        <p className="text-sm font-vt text-text-secondary tracking-wide line-clamp-2">{item.description}</p>
       )}
 
       {/* Meta */}
-      <div className="flex flex-col gap-1.5 text-xs text-zinc-500">
+      <div className="flex flex-col gap-1.5 text-sm font-vt text-text-secondary tracking-widest uppercase">
         {item.location && (
-          <span className="flex items-center gap-1.5">
-            <MapPin size={11} className="flex-shrink-0 text-zinc-600" />
+          <span className="flex items-center gap-2">
+            <MapPin size={12} className="flex-shrink-0 text-accent-secondary" />
             {item.location}
           </span>
         )}
-        <span className="flex items-center gap-1.5">
-          <Calendar size={11} className="flex-shrink-0 text-zinc-600" />
+        <span className="flex items-center gap-2">
+          <Calendar size={12} className="flex-shrink-0 text-accent-secondary" />
           {type === 'lost' ? item.date_lost : item.date_found}
         </span>
-        <span className="flex items-center gap-1.5">
-          <Tag size={11} className="flex-shrink-0 text-zinc-600" />
+        <span className="flex items-center gap-2">
+          <Tag size={12} className="flex-shrink-0 text-accent-secondary" />
           {item.category?.name || item.category_name || 'Others'}
         </span>
-        <span className="flex items-center gap-1.5">
-          <User size={11} className="flex-shrink-0 text-zinc-600" />
+        <span className="flex items-center gap-2">
+          <User size={12} className="flex-shrink-0 text-accent-secondary" />
           {item.user?.name}
         </span>
       </div>
 
       {/* Actions */}
-      <div className="flex flex-col gap-2 pt-1 border-t border-white/5 mt-auto sm:flex-row">
+      <div className="flex flex-col gap-2 pt-3 border-t-2 border-border mt-auto sm:flex-row">
         {onClaim && item.status === 'AVAILABLE' && (
           <button id={`claim-${item.id}`} onClick={() => onClaim(item)}
-            className="btn-primary text-xs py-1.5 flex-1">
-            Claim This
+            className="btn-primary flex-1">
+            CLAIM
           </button>
         )}
         {isOwner && type === 'found' && (!itemClaims || itemClaims.length === 0) && (
-          <Link to={`/claims`} className="btn-primary text-xs py-1.5 flex-1 text-center">
-            View Claims
+          <Link to={`/claims`} className="btn-primary flex-1 text-center">
+            CLAIMS
           </Link>
         )}
         {onEdit && isOwner && (
           <button onClick={() => onEdit(item)}
             disabled={isResolved}
             title={isResolved ? "Resolved items cannot be edited" : "Edit Item"}
-            className={`btn-secondary text-xs py-1.5 flex-1 ${isResolved ? 'opacity-50 cursor-not-allowed' : ''}`}>Edit</button>
+            className={`btn-secondary flex-1 ${isResolved ? 'opacity-50 cursor-not-allowed' : ''}`}>EDIT</button>
         )}
         {onDelete && isOwner && (
           <button onClick={() => onDelete(item.id)}
             disabled={isResolved}
             title={isResolved ? "Resolved items cannot be deleted" : "Delete Item"}
-            className={`btn-danger text-xs py-1.5 flex-1 ${isResolved ? 'opacity-50 cursor-not-allowed' : ''}`}>Delete</button>
+            className={`btn-danger flex-1 ${isResolved ? 'opacity-50 cursor-not-allowed' : ''}`}>DELETE</button>
         )}
       </div>
 
       {/* Inline Pending Claims */}
       {isOwner && type === 'found' && itemClaims && itemClaims.some(c => c.status === 'PENDING') && (
-        <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-white/10">
-          <p className="text-xs font-semibold text-zinc-300">Pending Claims:</p>
+        <div className="flex flex-col gap-2 mt-2 pt-2 border-t-2 border-border bg-surface p-2 -mx-2 -mb-2 shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]">
+          <p className="text-[10px] font-pixel text-accent drop-shadow-[1px_1px_0px_#000]">PENDING CLAIMS:</p>
           {itemClaims.filter(c => c.status === 'PENDING').map(claim => (
-            <div key={claim.id} className="bg-surface-3 p-2.5 rounded-lg border border-white/5 flex flex-col gap-2">
+            <div key={claim.id} className="border-2 border-border bg-surface-2 p-2 flex flex-col gap-2 shadow-pixel-sm">
               <div>
-                <p className="text-xs font-medium text-zinc-200">{claim.claimant?.name}</p>
+                <p className="text-sm font-vt text-text-primary tracking-widest">{claim.claimant?.name}</p>
                 {claim.description && (
-                  <p className="text-[11px] text-zinc-400 mt-0.5 line-clamp-2">Proof: {claim.description}</p>
+                  <p className="text-xs font-vt text-text-secondary mt-1 line-clamp-2">{claim.description}</p>
                 )}
               </div>
-              <div className="flex flex-col gap-1.5 sm:flex-row">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <button
                   onClick={() => onApproveClaim(claim.id)}
                   disabled={updatingClaim === claim.id}
-                  className="flex flex-1 items-center justify-center gap-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-md py-1 text-[11px] font-medium transition-all"
+                  className="flex flex-1 items-center justify-center gap-1 bg-success hover:bg-success/80 text-surface border-2 border-success rounded-sm py-1.5 text-[10px] font-pixel transition-all shadow-pixel-sm active:translate-y-[2px] active:shadow-none"
                 >
-                  <CheckCircle size={12} /> Approve
+                  <CheckSquare size={14} /> APPROVE
                 </button>
                 <button
                   onClick={() => onRejectClaim(claim.id)}
                   disabled={updatingClaim === claim.id}
-                  className="flex flex-1 items-center justify-center gap-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-md py-1 text-[11px] font-medium transition-all"
+                  className="flex flex-1 items-center justify-center gap-1 bg-danger hover:bg-danger/80 text-white border-2 border-danger rounded-sm py-1.5 text-[10px] font-pixel transition-all shadow-pixel-danger active:translate-y-[2px] active:shadow-none"
                 >
-                  <XCircle size={12} /> Reject
+                  <XSquare size={14} /> REJECT
                 </button>
               </div>
             </div>
           ))}
         </div>
       )}
-    </div>
+    </Card>
   )
 }

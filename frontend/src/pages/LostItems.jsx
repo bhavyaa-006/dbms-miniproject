@@ -9,6 +9,7 @@ import PageState from '../components/PageState'
 import { Link } from 'react-router-dom'
 import { Plus, Search } from 'lucide-react'
 import { getApiErrorMessage } from '../services/itemService'
+import { MotionGrid, MotionItem } from '../components/MotionWrappers'
 
 const STATUS_OPTIONS = ['LOST', 'FOUND', 'CLOSED']
 
@@ -50,6 +51,7 @@ export default function LostItems() {
 
     loadCategories()
   }, [])
+
   useEffect(() => { fetchItems() }, [fetchItems])
 
   const handleDelete = async (id) => {
@@ -67,11 +69,11 @@ export default function LostItems() {
     <div className="w-full max-w-6xl space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-zinc-100">Lost Items</h1>
-          <p className="text-xs text-zinc-500 mt-0.5">{items.length} item{items.length !== 1 ? 's' : ''} reported</p>
+          <h1 className="text-2xl text-text" style={{fontFamily: '"Press Start 2P"', fontSize: '20px'}}>LOST.ITEMS</h1>
+          <p className="text-xs text-text-2 mt-0.5" style={{fontFamily: 'VT323, monospace'}}>{items.length} item{items.length !== 1 ? 's' : ''} reported</p>
         </div>
         <Link to="/report-lost" className="btn-primary text-sm flex items-center justify-center gap-2 self-start">
-          <Plus size={14} /> Report Lost
+          <Plus size={14} /> REPORT
         </Link>
       </div>
 
@@ -104,17 +106,18 @@ export default function LostItems() {
           <PageState icon={Search} title="No lost items found" description="Lost item reports will appear here when they are created." />
         )
         : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.isArray(items) && items.map(item => (
-              <ItemCard
-                key={item.id}
-                item={item}
-                type="lost"
-                isOwner={item.user?.id === user?.id || user?.role === 'ADMIN'}
-                onDelete={handleDelete}
-              />
+          <MotionGrid>
+            {Array.isArray(items) && items.map((item) => (
+              <MotionItem key={item.id}>
+                <ItemCard
+                  item={item}
+                  type="lost"
+                  isOwner={item.user?.id === user?.id || user?.role === 'ADMIN'}
+                  onDelete={handleDelete}
+                />
+              </MotionItem>
             ))}
-          </div>
+          </MotionGrid>
         )}
     </div>
   )

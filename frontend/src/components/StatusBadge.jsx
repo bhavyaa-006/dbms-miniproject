@@ -1,21 +1,21 @@
 const configs = {
   // Lost item statuses
-  LOST:   { label: 'Lost',   cls: 'bg-amber-500/10   text-amber-400   border-amber-500/20'   },
-  FOUND:  { label: 'Found',  cls: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
-  CLOSED: { label: 'Closed', cls: 'bg-zinc-500/10    text-zinc-400    border-zinc-500/20'    },
+  LOST:   { label: 'LOST',   cls: 'bg-danger text-white border-danger shadow-pixel-danger' },
+  FOUND:  { label: 'FOUND',  cls: 'bg-accent-secondary text-surface border-accent-secondary shadow-pixel-sm' },
+  CLOSED: { label: 'CLOSED', cls: 'bg-muted text-surface-2 border-muted shadow-pixel-sm' },
   // Found item statuses
-  AVAILABLE:     { label: 'Available',     cls: 'bg-sky-500/10     text-sky-400     border-sky-500/20'     },
-  CLAIMED:       { label: 'Claimed',       cls: 'bg-purple-500/10  text-purple-400  border-purple-500/20'  },
+  AVAILABLE: { label: 'AVAILABLE', cls: 'bg-accent text-white border-accent shadow-pixel-accent' },
+  CLAIMED:   { label: 'CLAIMED',   cls: 'bg-success text-surface border-success shadow-pixel-sm' },
   // Claim statuses
-  PENDING:   { label: 'Pending',   cls: 'bg-amber-500/10   text-amber-400   border-amber-500/20'   },
-  APPROVED:  { label: 'Approved',  cls: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
-  REJECTED:  { label: 'Rejected',  cls: 'bg-red-500/10     text-red-400     border-red-500/20'     },
+  PENDING:  { label: 'PENDING',  cls: 'bg-accent-secondary text-surface border-accent-secondary shadow-pixel-sm' },
+  APPROVED: { label: 'APPROVED', cls: 'bg-success text-surface border-success shadow-pixel-sm' },
+  REJECTED: { label: 'REJECTED', cls: 'bg-danger text-white border-danger shadow-pixel-danger' },
 }
 
 export default function StatusBadge({ status }) {
-  const cfg = configs[status] || { label: status, cls: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20' }
+  const cfg = configs[status] || { label: status, cls: 'bg-surface-2 text-text-secondary border-border' }
   return (
-    <span className={`badge border ${cfg.cls}`}>
+    <span className={`badge ${cfg.cls}`} data-status={status}>
       {cfg.label}
     </span>
   )

@@ -4,7 +4,8 @@ import { useToast } from '../context/ToastContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 import StatusBadge from '../components/StatusBadge'
 import PageState from '../components/PageState'
-import { CheckCircle, XCircle, MapPin, Calendar, ClipboardList } from 'lucide-react'
+import { MotionList, MotionListItem } from '../components/MotionWrappers'
+import { CheckSquare, XSquare, MapPin, Calendar, Terminal } from 'lucide-react'
 
 export default function Claims() {
   const { addToast } = useToast()
@@ -20,7 +21,7 @@ export default function Claims() {
       const res = await getAllClaims()
       setClaims(res.data)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to load claims')
+      setError(err.response?.data?.detail || 'FAILED_TO_LOAD_DATA')
     } finally {
       setLoading(false)
     }
@@ -32,10 +33,10 @@ export default function Claims() {
     setUpdating(id)
     try {
       await approveClaim(id)
-      addToast(`Claim approved successfully`, 'success')
+      addToast(`CLAIM APPROVED.`, 'success')
       fetchClaims()
     } catch (err) {
-      addToast(err.response?.data?.detail || 'Action failed', 'error')
+      addToast(err.response?.data?.detail || 'ACTION_FAILED', 'error')
     } finally {
       setUpdating(null)
     }
@@ -45,10 +46,10 @@ export default function Claims() {
     setUpdating(id)
     try {
       await rejectClaim(id)
-      addToast(`Claim rejected successfully`, 'success')
+      addToast(`CLAIM REJECTED.`, 'success')
       fetchClaims()
     } catch (err) {
-      addToast(err.response?.data?.detail || 'Action failed', 'error')
+      addToast(err.response?.data?.detail || 'ACTION_FAILED', 'error')
     } finally {
       setUpdating(null)
     }
@@ -59,78 +60,91 @@ export default function Claims() {
   if (error) {
     return (
       <PageState
-        icon={ClipboardList}
+        icon={Terminal}
         tone="error"
-        title="Claims unavailable"
+        title="SYSTEM_ERROR"
         description={error}
-        actionLabel="Retry"
+        actionLabel="RETRY"
         onAction={fetchClaims}
       />
     )
   }
 
   return (
-    <div className="w-full max-w-4xl space-y-5">
-      <div>
-        <h1 className="text-lg font-semibold text-zinc-100">All Claims</h1>
-        <p className="text-xs text-zinc-500 mt-0.5">{claims.length} claim{claims.length !== 1 ? 's' : ''} total</p>
+    <div className="w-full max-w-5xl space-y-6">
+      <div className="bg-surface-2 border-2 border-border p-4 shadow-pixel-sm">
+        <h1 className="text-xl font-pixel text-text-primary drop-shadow-[1px_1px_0px_#000]">ADMIN_CLAIMS.LOG</h1>
+        <p className="text-sm font-vt text-accent-secondary mt-1 tracking-widest uppercase">
+          &gt; {claims.length} CLAIM{claims.length !== 1 ? 'S' : ''} IN DATABASE
+        </p>
       </div>
 
       {claims.length === 0
-        ? <PageState icon={ClipboardList} title="No claims submitted yet" description="Claims will appear here after users submit them." />
-        : claims.map(claim => (
-          <div key={claim.id} className="card space-y-3">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        ? <PageState icon={Terminal} title="NO CLAIMS FOUND" description="Database is empty." />
+        : (
+          <MotionList>
+            {claims.map(claim => (
+              <MotionListItem key={claim.id}>
+                <div className="card relative overflow-hidden group hover:border-accent transition-colors">
+            {/* Header */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-border p-3 -mx-4 -mt-4 mb-4 border-b-2 border-background">
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-zinc-100">{claim.found_item?.title}</p>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  Claimed by: <span className="text-zinc-300">{claim.claimant?.name}</span>
-                  {' '}&mdash; {claim.claimant?.email}
+                <p className="text-sm font-vt text-text-primary uppercase tracking-widest leading-none">TARGET: {claim.found_item?.title}</p>
+                <p className="text-[10px] font-vt text-text-secondary uppercase mt-1 tracking-widest">
+                  CLAIMANT: <span className="text-accent-secondary">{claim.claimant?.name}</span>
+                  {' '}— {claim.claimant?.email}
                 </p>
               </div>
               <StatusBadge status={claim.status} />
             </div>
 
-            <div className="flex flex-col gap-2 text-xs text-zinc-500 sm:flex-row sm:flex-wrap sm:gap-4">
+            {/* Meta */}
+            <div className="flex flex-col gap-2 text-xs font-vt text-text-secondary tracking-widest sm:flex-row sm:flex-wrap sm:gap-4 uppercase">
               {claim.found_item?.location && (
-                <span className="flex items-center gap-1"><MapPin size={11} />{claim.found_item.location}</span>
+                <span className="flex items-center gap-1.5 text-accent-secondary"><MapPin size={12} className="text-muted"/>{claim.found_item.location}</span>
               )}
-              <span className="flex items-center gap-1"><Calendar size={11} />
-                {new Date(claim.created_at).toLocaleDateString()}
+              <span className="flex items-center gap-1.5 text-accent-secondary">
+                <Calendar size={12} className="text-muted"/>
+                INITIATED: {new Date(claim.created_at).toLocaleDateString()}
               </span>
             </div>
 
+            {/* Proof Box */}
             {claim.description && (
-              <div className="bg-surface-2 rounded-lg p-3 text-xs text-zinc-400 border border-white/5">
-                <span className="text-zinc-500 font-medium block mb-1">Proof of ownership:</span>
-                {claim.description}
+              <div className="bg-background border-2 border-border p-3 mt-4 relative">
+                <span className="absolute -top-2 left-2 bg-surface-2 px-1 text-[9px] font-pixel text-accent drop-shadow-[1px_1px_0px_#000]">PROOF_DATA</span>
+                <p className="text-sm font-vt text-text-primary tracking-widest uppercase mt-1">{claim.description}</p>
               </div>
             )}
 
+            {/* Actions */}
             {claim.status === 'PENDING' && (
-              <div className="flex flex-col gap-2 pt-1 sm:flex-row">
+              <div className="flex flex-col gap-3 pt-4 mt-4 border-t-2 border-border sm:flex-row">
                 <button
                   id={`approve-${claim.id}`}
                   onClick={() => handleApprove(claim.id)}
                   disabled={updating === claim.id}
-                  className="flex items-center justify-center gap-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400
-                             border border-emerald-500/20 rounded-lg px-3 py-1.5 text-xs font-medium transition-all"
+                  className="flex flex-1 items-center justify-center gap-2 bg-success hover:bg-success/80 text-surface
+                             border-2 border-success py-2.5 px-4 text-[10px] font-pixel transition-all shadow-pixel-sm active:shadow-none active:translate-y-[2px]"
                 >
-                  <CheckCircle size={13} /> Approve
+                  <CheckSquare size={14} /> APPROVE_CLAIM
                 </button>
                 <button
                   id={`reject-${claim.id}`}
                   onClick={() => handleReject(claim.id)}
                   disabled={updating === claim.id}
-                  className="flex items-center justify-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400
-                             border border-red-500/20 rounded-lg px-3 py-1.5 text-xs font-medium transition-all"
+                  className="flex flex-1 items-center justify-center gap-2 bg-danger hover:bg-danger/80 text-white
+                             border-2 border-danger py-2.5 px-4 text-[10px] font-pixel transition-all shadow-pixel-danger active:shadow-none active:translate-y-[2px]"
                 >
-                  <XCircle size={13} /> Reject
+                  <XSquare size={14} /> REJECT_CLAIM
                 </button>
               </div>
             )}
-          </div>
-        ))}
+                </div>
+              </MotionListItem>
+            ))}
+          </MotionList>
+        )}
     </div>
   )
 }

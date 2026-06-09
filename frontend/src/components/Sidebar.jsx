@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useState } from 'react'
 import {
   LayoutDashboard, Search, Plus, PackageSearch,
   ClipboardList, Bell, LogOut, ShieldCheck
@@ -21,6 +22,7 @@ const adminExtra = [
 
 export default function Sidebar({ mobileOpen = false, onClose }) {
   const { user, logout } = useAuth()
+  const [collapsed, setCollapsed] = useState(false)
   const navigate = useNavigate()
 
   const links = user?.role === 'ADMIN'
@@ -38,23 +40,25 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
   }
 
   return (
-    <aside className={`fixed inset-y-0 left-0 z-40 w-56 flex-shrink-0 bg-surface border-r border-white/5 flex flex-col
-                       transition-transform duration-200 ease-out md:static md:translate-x-0
-                       ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+    <aside className={`fixed inset-y-0 left-0 z-40 ${collapsed ? 'w-20' : 'w-64'} flex-shrink-0 bg-surface border-r-2 border-border flex flex-col
+                       transition-all duration-200 ease-out md:static md:translate-x-0
+                       ${mobileOpen ? 'translate-x-0 shadow-[4px_0_15px_rgba(124,92,255,0.2)]' : '-translate-x-full md:translate-x-0'}`}>
       {/* Logo */}
-      <div className="px-4 py-4 sm:py-5 border-b border-white/5">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20
-                          flex items-center justify-center text-base">🔍</div>
-          <div>
-            <p className="text-sm font-semibold text-zinc-100 leading-none">Campus L&amp;F</p>
-            <p className="text-[10px] text-zinc-500 mt-0.5">Lost &amp; Found</p>
-          </div>
+      <div className="px-3 py-4 border-b-2 border-border bg-surface-2 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-sm bg-background border-2 border-accent flex items-center justify-center text-xl shadow-pixel-sm">👾</div>
+          {!collapsed && (
+            <div>
+              <p className="text-[11px] font-pixel text-accent drop-shadow-[1px_1px_0px_#000] leading-tight">Campus L&amp;F</p>
+              <p className="text-xs font-vt text-text-secondary mt-1 tracking-widest uppercase">System Online</p>
+            </div>
+          )}
         </div>
+        <button onClick={() => setCollapsed(v => !v)} className="text-text-secondary px-2 py-1 rounded-sm border border-border bg-black/10 text-xs">{collapsed ? '›' : '‹'}</button>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
         {links.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
@@ -62,27 +66,29 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
             onClick={handleNavigate}
             className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
           >
-            <Icon size={16} />
-            {label}
+            <Icon size={16} className="text-accent-secondary" />
+            {!collapsed && <span>{label}</span>}
           </NavLink>
         ))}
       </nav>
 
       {/* User + Logout */}
-      <div className="px-3 py-4 border-t border-white/5">
-        <div className="flex items-center gap-2.5 px-2 mb-3">
-          <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center
-                          text-xs font-semibold text-accent flex-shrink-0">
+      <div className="px-3 py-4 border-t-2 border-border bg-surface-2">
+        <div className="flex items-center gap-3 px-2 mb-4">
+          <div className="w-8 h-8 rounded-none bg-background border-2 border-accent flex items-center justify-center
+                          text-sm font-pixel text-text-primary flex-shrink-0 shadow-pixel-sm">
             {user?.name?.[0]?.toUpperCase()}
           </div>
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-zinc-200 truncate">{user?.name}</p>
-            <p className="text-[10px] text-zinc-500 capitalize">{user?.role?.toLowerCase()}</p>
-          </div>
+          {!collapsed && (
+            <div className="min-w-0">
+              <p className="text-sm font-vt text-text-primary tracking-widest truncate">{user?.name}</p>
+              <p className="text-xs font-vt text-accent-secondary uppercase tracking-widest">{user?.role?.toLowerCase()}</p>
+            </div>
+          )}
         </div>
-        <button type="button" onClick={handleLogout} className="sidebar-link w-full text-red-400 hover:text-red-300 hover:bg-red-500/5">
-          <LogOut size={16} />
-          Logout
+        <button type="button" onClick={handleLogout} className="sidebar-link w-full text-danger hover:text-white hover:bg-danger/20 border-danger/30 hover:border-danger hover:shadow-[inset_4px_0_0_0_#FF5E7E]">
+          <LogOut size={16} className="text-danger" />
+          {!collapsed && <span className="font-vt tracking-widest">LOGOUT.EXE</span>}
         </button>
       </div>
     </aside>

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { getCategories, createFoundItem, getApiErrorMessage } from '../services/itemService'
 import { useToast } from '../context/ToastContext'
 import PageState from '../components/PageState'
-import { Upload } from 'lucide-react'
+import { Upload, Terminal } from 'lucide-react'
 
 export default function ReportFound() {
   const navigate = useNavigate()
@@ -28,7 +28,7 @@ export default function ReportFound() {
         const res = await getCategories()
         setCategories(res.data)
       } catch (err) {
-        setCategoryError(err.response?.data?.detail || 'Failed to load categories')
+        setCategoryError(err.response?.data?.detail || 'FAILED_TO_LOAD_CATEGORIES')
       } finally {
         setCategoryLoading(false)
       }
@@ -47,11 +47,11 @@ export default function ReportFound() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.category_id) {
-      setCategoryValidationError('Please select a category')
+      setCategoryValidationError('CATEGORY_REQUIRED')
       return
     }
     if (categoryLoading || categoryError || categoryUnavailable) {
-      addToast('Categories are not available right now', 'error')
+      addToast('CATEGORIES_UNAVAILABLE', 'error')
       return
     }
     setCategoryValidationError('')
@@ -61,88 +61,88 @@ export default function ReportFound() {
     if (image) fd.append('image', image)
     try {
       await createFoundItem(fd)
-      addToast('Found item reported successfully!', 'success')
+      addToast('REPORT_SUBMITTED_SUCCESSFULLY', 'success')
       navigate('/found-items')
     } catch (err) {
       console.error('Found item submit failed:', err)
-      addToast(getApiErrorMessage(err) || 'Failed to submit', 'error')
+      addToast(getApiErrorMessage(err) || 'REPORT_SUBMISSION_FAILED', 'error')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="w-full max-w-lg space-y-5">
-      <div>
-        <h1 className="text-lg font-semibold text-zinc-100">Report Found Item</h1>
-        <p className="text-xs text-zinc-500 mt-0.5">Help someone get their item back by reporting it here.</p>
+    <div className="w-full max-w-2xl space-y-6">
+      <div className="bg-surface-2 border-2 border-border p-4 shadow-pixel-sm">
+        <h1 className="text-xl font-pixel text-text-primary drop-shadow-[1px_1px_0px_#000]">INITIATE_FOUND_PROTOCOL</h1>
+        <p className="text-sm font-vt text-accent-secondary mt-1 tracking-widest uppercase">&gt; Submit recovered item data to the registry.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="card space-y-4">
+      <form onSubmit={handleSubmit} className="card space-y-6 p-6">
         {categoryUnavailable && (
           <PageState
             compact
-            icon={Upload}
-            title="No categories available"
-            description="Create reference categories before submitting a found item report."
+            icon={Terminal}
+            title="NO CATEGORIES AVAILABLE"
+            description="Initialize categories database before proceeding."
           />
         )}
 
         {categoryError && (
-          <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-300">
-            {categoryError}
+          <div className="bg-danger/20 border-2 border-danger p-3 text-xs font-vt uppercase tracking-widest text-danger">
+            [ SYSTEM_ERROR: {categoryError} ]
           </div>
         )}
 
         <div>
-          <label className="label">Item Title *</label>
+          <label className="label text-accent-secondary drop-shadow-[1px_1px_0px_#000]">&gt; TARGET_IDENTIFIER (TITLE) *</label>
           <input name="title" required value={form.title} onChange={handleChange}
-            placeholder="Item title" className="input" />
+            placeholder="ENTER TITLE" className="input uppercase focus:border-accent-secondary" />
         </div>
 
         <div>
-          <label className="label">Description</label>
+          <label className="label text-accent-secondary drop-shadow-[1px_1px_0px_#000]">&gt; TARGET_DESCRIPTION</label>
           <textarea name="description" rows={3} value={form.description} onChange={handleChange}
-            placeholder="Describe the item" className="input resize-none text-sm" />
+            placeholder="ENTER DESCRIPTION" className="input resize-none uppercase focus:border-accent-secondary" />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div>
-            <label className="label">Category *</label>
-              <select name="category_id" required value={form.category_id} onChange={(e) => { handleChange(e); setCategoryValidationError('') }} className="input" disabled={categoryLoading || !!categoryError || categoryUnavailable}>
-                <option value="">{categoryLoading ? 'Loading categories...' : 'Select Category'}</option>
+            <label className="label text-accent-secondary drop-shadow-[1px_1px_0px_#000]">&gt; CATEGORY_CLASS *</label>
+              <select name="category_id" required value={form.category_id} onChange={(e) => { handleChange(e); setCategoryValidationError('') }} className="input uppercase bg-surface focus:border-accent-secondary" disabled={categoryLoading || !!categoryError || categoryUnavailable}>
+                <option value="">{categoryLoading ? 'LOADING...' : 'SELECT_CLASS'}</option>
                 {categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
               </select>
-            {categoryValidationError && <p className="mt-1 text-xs text-red-300">{categoryValidationError}</p>}
+            {categoryValidationError && <p className="mt-1 text-xs font-vt text-danger">{categoryValidationError}</p>}
           </div>
           <div>
-            <label className="label">Date Found *</label>
-            <input name="date_found" type="date" required value={form.date_found} onChange={handleChange} className="input" />
+            <label className="label text-accent-secondary drop-shadow-[1px_1px_0px_#000]">&gt; TIME_RECOVERED *</label>
+            <input name="date_found" type="date" required value={form.date_found} onChange={handleChange} className="input uppercase focus:border-accent-secondary" />
           </div>
         </div>
 
         <div>
-          <label className="label">Where did you find it?</label>
+          <label className="label text-accent-secondary drop-shadow-[1px_1px_0px_#000]">&gt; RECOVERY_LOCATION</label>
           <input name="location" value={form.location} onChange={handleChange}
-            placeholder="Where was it found?" className="input" />
+            placeholder="ENTER LOCATION" className="input uppercase focus:border-accent-secondary" />
         </div>
 
         <div>
-          <label className="label">Image (recommended)</label>
-          <label className="flex flex-col items-center gap-2 py-6 border-2 border-dashed border-white/10
-                             rounded-xl cursor-pointer hover:border-accent/40 transition-colors">
+          <label className="label text-accent-secondary drop-shadow-[1px_1px_0px_#000]">&gt; VISUAL_DATA_UPLOAD</label>
+          <label className="flex flex-col items-center gap-3 py-8 border-2 border-dashed border-border bg-background
+                             cursor-pointer hover:border-accent-secondary hover:bg-surface transition-colors shadow-pixel-sm hover:shadow-none hover:translate-y-[2px]">
             {preview
-              ? <img src={preview} alt="preview" className="h-24 w-auto rounded-lg object-contain" />
-              : <><Upload size={20} className="text-zinc-500" /><span className="text-xs text-zinc-500">Click to upload image</span></>
+              ? <img src={preview} alt="preview" className="h-32 w-auto object-contain border-2 border-border" />
+              : <><Upload size={24} className="text-accent-secondary" /><span className="text-sm font-vt tracking-widest uppercase text-text-secondary">CLICK TO UPLOAD IMAGE DATA</span></>
             }
             <input type="file" accept="image/*" onChange={handleImage} className="hidden" />
           </label>
         </div>
 
-        <div className="flex flex-col-reverse gap-3 pt-1 sm:flex-row">
-          <button type="button" onClick={() => navigate(-1)} className="btn-secondary flex-1">Cancel</button>
-          <button type="submit" disabled={loading || categoryUnavailable} className="btn-primary flex-1">
-            {loading ? 'Submitting...' : 'Submit Report'}
+        <div className="flex flex-col-reverse gap-4 pt-4 border-t-2 border-border sm:flex-row">
+          <button type="button" onClick={() => navigate(-1)} className="btn-secondary flex-1">ABORT</button>
+          <button type="submit" disabled={loading || categoryUnavailable} className="btn-primary flex-1 border-accent-secondary bg-accent-secondary/20 hover:bg-accent-secondary text-accent-secondary hover:text-surface">
+            {loading ? 'UPLOADING...' : 'EXECUTE_REPORT'}
           </button>
         </div>
       </form>
