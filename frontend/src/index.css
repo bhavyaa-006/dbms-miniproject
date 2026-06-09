@@ -19,9 +19,17 @@
     margin: 0;
     min-height: 100vh;
     overflow-x: hidden;
-    /* Deep midnight gradient with decorative white pixel-flower at bottom-right (medium) */
-    background: url('/src/assets/pixel-art.svg') right 12px bottom 12px / 128px 128px no-repeat, radial-gradient(circle at top, #0B1020 0%, #060816 100%);
+    /* Deep midnight gradient with decorative halftone-eye pixel-art at bottom-right (subtle) */
+    background: url('/src/assets/pixel-art.svg') right 24px bottom 24px / 320px 88px no-repeat, radial-gradient(circle at top, #0B1020 0%, #060816 100%);
     position: relative;
+  }
+
+  /* Hide or reduce decorative art on small screens */
+  @media (max-width: 640px) {
+    body {
+      background-position: right 8px bottom 8px;
+      background-size: 220px 64px, auto;
+    }
   }
 
   /* Scanlines Overlay */
