@@ -131,7 +131,7 @@ export default function Dashboard() {
               : recent.lost.map(item => (
                 <div key={item.id} className="flex flex-col gap-2 py-3 border-b-2 border-border last:border-0 sm:flex-row sm:items-center sm:justify-between sm:gap-3 group hover:bg-surface transition-colors -mx-4 px-4">
                   <div className="min-w-0">
-                    <p className="text-sm font-vt text-text-primary tracking-wider line-clamp-1 group-hover:text-accent transition-colors">{item.title}</p>
+                    <p className="text-[22px] font-vt text-text-primary tracking-wider line-clamp-1 group-hover:text-accent transition-colors">{item.title}</p>
                     <p className="text-[11px] font-vt text-text-secondary uppercase tracking-widest mt-0.5">{item.location || 'UNKNOWN_SECTOR'}</p>
                   </div>
                   <StatusBadge status={item.status} />
@@ -161,7 +161,7 @@ export default function Dashboard() {
               : recent.found.map(item => (
                 <div key={item.id} className="flex flex-col gap-2 py-3 border-b-2 border-border last:border-0 sm:flex-row sm:items-center sm:justify-between sm:gap-3 group hover:bg-surface transition-colors -mx-4 px-4">
                   <div className="min-w-0">
-                    <p className="text-sm font-vt text-text-primary tracking-wider line-clamp-1 group-hover:text-accent transition-colors">{item.title}</p>
+                    <p className="text-[22px] font-vt text-text-primary tracking-wider line-clamp-1 group-hover:text-accent transition-colors">{item.title}</p>
                     <p className="text-[11px] font-vt text-text-secondary uppercase tracking-widest mt-0.5">{item.location || 'UNKNOWN_SECTOR'}</p>
                   </div>
                   <StatusBadge status={item.status} />

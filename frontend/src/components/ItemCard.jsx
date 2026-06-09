@@ -47,23 +47,23 @@ export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwne
       )}
 
       {/* Meta */}
-      <div className="flex flex-col gap-1.5 text-sm sm:text-base font-vt text-text-primary tracking-wide">
+      <div className="flex flex-col gap-2 text-[16px] sm:text-[16px] font-vt text-text-primary tracking-wide leading-snug">
         {item.location && (
           <span className="flex items-center gap-2">
-            <MapPin size={14} className="flex-shrink-0 text-accent-secondary" />
+            <MapPin size={16} className="flex-shrink-0 text-accent-secondary" />
             {item.location}
           </span>
         )}
         <span className="flex items-center gap-2">
-          <Calendar size={14} className="flex-shrink-0 text-accent-secondary" />
+          <Calendar size={16} className="flex-shrink-0 text-accent-secondary" />
           {type === 'lost' ? item.date_lost : item.date_found}
         </span>
         <span className="flex items-center gap-2">
-          <Tag size={14} className="flex-shrink-0 text-accent-secondary" />
+          <Tag size={16} className="flex-shrink-0 text-accent-secondary" />
           {item.category?.name || item.category_name || 'Others'}
         </span>
         <span className="flex items-center gap-2">
-          <User size={14} className="flex-shrink-0 text-accent-secondary" />
+          <User size={16} className="flex-shrink-0 text-accent-secondary" />
           {item.user?.name}
         </span>
       </div>
@@ -98,27 +98,27 @@ export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwne
       {/* Inline Pending Claims */}
       {isOwner && type === 'found' && itemClaims && itemClaims.some(c => c.status === 'PENDING') && (
         <div className="flex flex-col gap-2 mt-2 pt-2 border-t-2 border-border bg-surface p-2 -mx-2 -mb-2 shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]">
-          <p className="text-[10px] font-pixel text-accent drop-shadow-[1px_1px_0px_#000]">PENDING CLAIMS:</p>
+          <p className="text-[13px] font-pixel text-accent drop-shadow-[1px_1px_0px_#000]">PENDING CLAIMS:</p>
           {itemClaims.filter(c => c.status === 'PENDING').map(claim => (
             <div key={claim.id} className="border-2 border-border bg-surface-2 p-2 flex flex-col gap-2 shadow-pixel-sm">
               <div>
-                <p className="text-sm font-vt text-text-primary tracking-widest">{claim.claimant?.name}</p>
+                <p className="text-[15px] font-vt text-text-primary tracking-wide">{claim.claimant?.name}</p>
                 {claim.description && (
-                  <p className="text-xs font-vt text-text-secondary mt-1 line-clamp-2">{claim.description}</p>
+                  <p className="text-[14px] font-vt text-text-secondary mt-1 line-clamp-2">{claim.description}</p>
                 )}
               </div>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <button
                   onClick={() => onApproveClaim(claim.id)}
                   disabled={updatingClaim === claim.id}
-                  className="flex flex-1 items-center justify-center gap-1 bg-success hover:bg-success/80 text-surface border-2 border-success rounded-sm py-1.5 text-[10px] font-pixel transition-all shadow-pixel-sm active:translate-y-[2px] active:shadow-none"
+                  className="flex flex-1 items-center justify-center gap-1 bg-success hover:bg-success/80 text-surface border-2 border-success rounded-sm py-2 text-sm font-pixel transition-all shadow-pixel-sm active:translate-y-[2px] active:shadow-none"
                 >
                   <CheckSquare size={14} /> APPROVE
                 </button>
                 <button
                   onClick={() => onRejectClaim(claim.id)}
                   disabled={updatingClaim === claim.id}
-                  className="flex flex-1 items-center justify-center gap-1 bg-danger hover:bg-danger/80 text-white border-2 border-danger rounded-sm py-1.5 text-[10px] font-pixel transition-all shadow-pixel-danger active:translate-y-[2px] active:shadow-none"
+                  className="flex flex-1 items-center justify-center gap-1 bg-danger hover:bg-danger/80 text-white border-2 border-danger rounded-sm py-2 text-sm font-pixel transition-all shadow-pixel-danger active:translate-y-[2px] active:shadow-none"
                 >
                   <XSquare size={14} /> REJECT
                 </button>
