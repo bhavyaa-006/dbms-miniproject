@@ -35,7 +35,7 @@ export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwne
 
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
-        <h3 className="font-semibold text-zinc-100 text-sm leading-snug line-clamp-2" style={{fontFamily: 'Inter, system-ui'}}>
+        <h3 className="font-bold text-zinc-100 text-base leading-snug line-clamp-2" style={{fontFamily: 'Inter, system-ui'}}>
           {item.title}
         </h3>
         <StatusBadge status={item.status} />
@@ -43,27 +43,27 @@ export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwne
 
       {/* Description */}
       {item.description && (
-        <p className="text-sm font-vt text-text-secondary tracking-wide line-clamp-2">{item.description}</p>
+        <p className="text-base font-vt text-text-primary tracking-wide leading-relaxed line-clamp-2">{item.description}</p>
       )}
 
       {/* Meta */}
-      <div className="flex flex-col gap-1.5 text-sm font-vt text-text-secondary tracking-widest uppercase">
+      <div className="flex flex-col gap-1.5 text-sm sm:text-base font-vt text-text-primary tracking-wide">
         {item.location && (
           <span className="flex items-center gap-2">
-            <MapPin size={12} className="flex-shrink-0 text-accent-secondary" />
+            <MapPin size={14} className="flex-shrink-0 text-accent-secondary" />
             {item.location}
           </span>
         )}
         <span className="flex items-center gap-2">
-          <Calendar size={12} className="flex-shrink-0 text-accent-secondary" />
+          <Calendar size={14} className="flex-shrink-0 text-accent-secondary" />
           {type === 'lost' ? item.date_lost : item.date_found}
         </span>
         <span className="flex items-center gap-2">
-          <Tag size={12} className="flex-shrink-0 text-accent-secondary" />
+          <Tag size={14} className="flex-shrink-0 text-accent-secondary" />
           {item.category?.name || item.category_name || 'Others'}
         </span>
         <span className="flex items-center gap-2">
-          <User size={12} className="flex-shrink-0 text-accent-secondary" />
+          <User size={14} className="flex-shrink-0 text-accent-secondary" />
           {item.user?.name}
         </span>
       </div>
