@@ -19,46 +19,48 @@ export default function Login() {
     try {
       const res = await login(form)
       setAuth(res.data.access_token, res.data.user)
-      addToast(`Welcome back, ${res.data.user.name}!`, 'success')
+      addToast(`ACCESS GRANTED: Welcome, ${res.data.user.name}!`, 'success')
       navigate('/dashboard')
     } catch (err) {
-      addToast(err.response?.data?.detail || 'Login failed', 'error')
+      addToast(err.response?.data?.detail || 'ACCESS DENIED', 'error')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div className="w-full space-y-5">
+    <div className="w-full space-y-6">
       <div>
-        <h2 className="text-base font-semibold text-zinc-100">Sign in</h2>
-        <p className="text-sm text-zinc-500 mt-0.5">Welcome back to Campus L&amp;F</p>
+        <h2 className="text-xl font-vt text-text-primary uppercase tracking-widest drop-shadow-[1px_1px_0px_#000]">Authenticate</h2>
+        <p className="text-sm font-vt text-accent-secondary mt-1 tracking-widest uppercase">&gt; Enter credentials to continue</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="label">Email</label>
+          <label className="label text-accent drop-shadow-[1px_1px_0px_#000]">&gt; USER_EMAIL</label>
           <input id="login-email" name="email" type="email" required
             value={form.email} onChange={handleChange}
-            placeholder="Email address" className="input" />
+            placeholder="USER@DOMAIN.COM" className="input uppercase" />
         </div>
         <div>
-          <label className="label">Password</label>
+          <label className="label text-accent drop-shadow-[1px_1px_0px_#000]">&gt; PASSWORD_KEY</label>
           <input id="login-password" name="password" type="password" required
             value={form.password} onChange={handleChange}
-            placeholder="Password" className="input" />
+            placeholder="********" className="input" />
         </div>
-        <button id="login-submit" type="submit" disabled={loading} className="btn-primary w-full">
-          {loading ? 'Signing in...' : 'Sign in'}
+        <button id="login-submit" type="submit" disabled={loading} className="btn-primary w-full mt-2 border-accent shadow-pixel-accent text-sm">
+          {loading ? 'AUTHENTICATING...' : 'LOGIN.EXE'}
         </button>
       </form>
 
-      <p className="text-center text-xs text-zinc-500 pt-2">
-        No account?{' '}
-        <Link to="/register" className="text-accent hover:text-accent-hover transition-colors">
-          Register here
-        </Link>
-      </p>
+      <div className="pt-4 border-t-2 border-border mt-4">
+        <p className="text-center text-sm font-vt text-text-secondary tracking-widest uppercase">
+          &gt; Unregistered Entity?{' '}
+          <Link to="/register" className="text-accent-secondary hover:text-white transition-colors drop-shadow-[1px_1px_0px_#000]">
+            INITIATE REGISTRATION
+          </Link>
+        </p>
+      </div>
     </div>
   )
 }

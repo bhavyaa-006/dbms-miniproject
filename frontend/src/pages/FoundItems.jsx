@@ -5,11 +5,12 @@ import { getFoundItems, getCategories, deleteFoundItem } from '../services/itemS
 import { getAllClaims, approveClaim, rejectClaim } from '../services/claimService'
 import SearchFilter from '../components/SearchFilter'
 import ItemCard from '../components/ItemCard'
+import { MotionGrid, MotionItem } from '../components/MotionWrappers'
 import ClaimModal from '../components/ClaimModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import PageState from '../components/PageState'
 import { Link } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { Plus, Terminal } from 'lucide-react'
 import { getApiErrorMessage } from '../services/itemService'
 
 const STATUS_OPTIONS = ['AVAILABLE', 'CLAIMED']
@@ -40,7 +41,7 @@ export default function FoundItems() {
           const claimsRes = await getAllClaims()
           setClaims(Array.isArray(claimsRes.data) ? claimsRes.data : [])
         } catch (e) {
-          // Ignore claims fetch error if it's just unavailable
+          // Ignore claims fetch error
         }
       }
     } catch (err) {
@@ -55,7 +56,7 @@ export default function FoundItems() {
     const loadCategories = async () => {
       try {
         const res = await getCategories()
-        setCategories(res.data)
+        setCategories(Array.isArray(res.data) ? res.data : [])
       } catch (err) {
         setCategoryError(err.response?.data?.detail || 'Failed to load categories')
       }
@@ -63,6 +64,7 @@ export default function FoundItems() {
 
     loadCategories()
   }, [])
+
   useEffect(() => { fetchItems() }, [fetchItems])
 
   const handleDelete = async (id) => {
@@ -106,11 +108,11 @@ export default function FoundItems() {
     <div className="w-full max-w-6xl space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-zinc-100">Found Items</h1>
-          <p className="text-xs text-zinc-500 mt-0.5">{items.length} item{items.length !== 1 ? 's' : ''} reported</p>
+          <h1 className="text-2xl text-text" style={{fontFamily: '"Press Start 2P"', fontSize: '20px'}}>FOUND.ITEMS</h1>
+          <p className="text-xs text-text-2 mt-0.5" style={{fontFamily: 'VT323, monospace'}}>{items.length} item{items.length !== 1 ? 's' : ''} reported</p>
         </div>
         <Link to="/report-found" className="btn-primary text-sm flex items-center justify-center gap-2 self-start">
-          <Plus size={14} /> Report Found
+          <Plus size={14} /> REPORT
         </Link>
       </div>
 
@@ -130,7 +132,7 @@ export default function FoundItems() {
       {loading ? <LoadingSpinner /> : error
         ? (
           <PageState
-            icon={Plus}
+            icon={Terminal}
             tone="error"
             title="Found items unavailable"
             description={error}
@@ -143,24 +145,25 @@ export default function FoundItems() {
           <PageState icon={Plus} title="No found items reported yet" description="Found item reports will appear here when they are created." />
         )
         : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {items.map(item => {
+          <MotionGrid>
+            {items.map((item) => {
               const itemClaims = claims.filter(c => c.found_item?.id === item.id)
               return (
-              <ItemCard
-                key={item.id}
-                item={item}
-                type="found"
-                isOwner={item.user?.id === user?.id || user?.role === 'ADMIN'}
-                onClaim={item.user?.id !== user?.id ? setClaimItem : null}
-                onDelete={handleDelete}
-                itemClaims={itemClaims}
-                onApproveClaim={handleApproveClaim}
-                onRejectClaim={handleRejectClaim}
-                updatingClaim={updatingClaim}
-              />
+              <MotionItem key={item.id}>
+                <ItemCard
+                  item={item}
+                  type="found"
+                  isOwner={item.user?.id === user?.id || user?.role === 'ADMIN'}
+                  onClaim={item.user?.id !== user?.id ? setClaimItem : null}
+                  onDelete={handleDelete}
+                  itemClaims={itemClaims}
+                  onApproveClaim={handleApproveClaim}
+                  onRejectClaim={handleRejectClaim}
+                  updatingClaim={updatingClaim}
+                />
+              </MotionItem>
             )})}
-          </div>
+          </MotionGrid>
         )}
 
       {claimItem && (

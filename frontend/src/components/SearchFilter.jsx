@@ -5,14 +5,14 @@ export default function SearchFilter({ search, onSearch, categoryId, onCategory,
     <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
       {/* Search */}
       <div className="relative w-full min-w-0 flex-1">
-        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-accent" />
         <input
           id="search-input"
           type="text"
-          placeholder="Search items..."
+          placeholder="SEARCH.EXE"
           value={search}
           onChange={e => onSearch(e.target.value)}
-          className="input w-full pl-8 py-2 text-sm"
+          className="input w-full pl-10 py-2.5 shadow-pixel-sm font-vt tracking-widest uppercase focus:shadow-none focus:translate-y-[2px]"
         />
       </div>
 
@@ -22,9 +22,9 @@ export default function SearchFilter({ search, onSearch, categoryId, onCategory,
           id="category-filter"
           value={categoryId}
           onChange={e => onCategory(e.target.value)}
-          className="input w-full py-2 text-sm sm:w-auto sm:min-w-36"
+          className="input w-full py-2.5 sm:w-auto sm:min-w-40 shadow-pixel-sm font-vt tracking-widest uppercase focus:shadow-none focus:translate-y-[2px] bg-surface"
         >
-          <option value="">All Categories</option>
+          <option value="">ALL_CATEGORIES</option>
           {categories.map(category => (
             <option key={category.id} value={category.id}>{category.name}</option>
           ))}
@@ -37,9 +37,9 @@ export default function SearchFilter({ search, onSearch, categoryId, onCategory,
           id="status-filter"
           value={status}
           onChange={e => onStatus(e.target.value)}
-          className="input w-full py-2 text-sm sm:w-auto sm:min-w-32"
+          className="input w-full py-2.5 sm:w-auto sm:min-w-36 shadow-pixel-sm font-vt tracking-widest uppercase focus:shadow-none focus:translate-y-[2px] bg-surface"
         >
-          <option value="">All Status</option>
+          <option value="">ALL_STATUS</option>
           {statusOptions.map(s => (
             <option key={s} value={s}>{s}</option>
           ))}

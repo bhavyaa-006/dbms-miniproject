@@ -8,8 +8,8 @@
   }
 
   html {
-    background-color: #09090b;
-    color: #e4e4e7;
+    background-color: #060816;
+    color: #F8FAFC;
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     scroll-behavior: smooth;
@@ -19,10 +19,43 @@
     margin: 0;
     min-height: 100vh;
     overflow-x: hidden;
+    /* Deep midnight gradient */
+    background: radial-gradient(circle at top, #0B1020 0%, #060816 100%);
+    position: relative;
+  }
+
+  /* Scanlines Overlay */
+  body::before {
+    content: " ";
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    z-index: 50;
+    background-size: 100% 2px, 3px 100%;
+    pointer-events: none;
+  }
+
+  /* Pixel grid */
+  body::after {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: 
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+    z-index: -1;
+    pointer-events: none;
   }
 
   #root {
     min-height: 100vh;
+    position: relative;
+    z-index: 1;
   }
 
   img {
@@ -31,63 +64,91 @@
   }
 
   ::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
   }
 
   ::-webkit-scrollbar-track {
-    background: #09090b;
+    background: #060816;
+    border-left: 2px solid #2A3555;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #3f3f46;
-    border-radius: 3px;
+    background: #7C5CFF;
+    border: 2px solid #060816;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #52525b;
+    background: #9D87FF;
   }
 }
 
 @layer components {
   .card {
-    @apply bg-surface border border-white/5 rounded-xl p-4 sm:p-5 shadow-card;
+    @apply bg-surface-2 border-2 border-border p-4 sm:p-5 shadow-card transition-transform duration-200 hover:-translate-y-1;
+    border-radius: 6px;
   }
 
   .btn-primary {
-    @apply bg-accent hover:bg-accent-hover text-white font-medium px-4 py-2 rounded-lg
-           transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-accent hover:bg-accent-hover text-white font-pixel text-xs px-4 py-3 rounded
+           transition-all duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
+           shadow-pixel-md hover:shadow-pixel-sm hover:translate-y-[2px] border-2 border-[#5B3DE0];
   }
 
   .btn-secondary {
-    @apply bg-surface-2 hover:bg-white/10 text-zinc-300 font-medium px-4 py-2 rounded-lg
-           border border-white/10 transition-all duration-150 active:scale-95;
+    @apply bg-surface hover:bg-surface-2 text-text-primary font-pixel text-xs px-4 py-3 rounded
+           border-2 border-border transition-all duration-150 active:scale-95 shadow-pixel-sm hover:shadow-none hover:translate-y-[2px];
   }
 
   .btn-danger {
-    @apply bg-red-500/10 hover:bg-red-500/20 text-red-400 font-medium px-4 py-2 rounded-lg
-           border border-red-500/20 transition-all duration-150 active:scale-95;
+    @apply bg-danger/10 hover:bg-danger/20 text-danger font-pixel text-xs px-4 py-3 rounded
+           border-2 border-danger/50 transition-all duration-150 active:scale-95 shadow-pixel-danger;
   }
 
   .input {
-    @apply w-full bg-surface-2 border border-white/10 rounded-lg px-3 py-2 text-zinc-100
-           placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-accent/50
-           focus:border-accent/50 transition-all duration-150;
+    @apply w-full bg-surface border-2 border-border rounded px-3 py-2 text-text-primary font-vt text-lg
+           placeholder-muted focus:outline-none focus:border-accent focus:shadow-glow transition-all duration-150;
   }
 
   .label {
-    @apply block text-sm font-medium text-zinc-400 mb-1.5;
+    @apply block text-sm font-vt text-text-secondary tracking-wider mb-1.5;
   }
 
   .badge {
-    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center gap-1 px-2 py-1 rounded-sm text-xs font-pixel border border-current;
   }
 
   .sidebar-link {
-    @apply flex w-full items-center gap-3 px-3 py-2 rounded-lg text-zinc-400 hover:text-zinc-100
-           hover:bg-white/5 transition-all duration-150 text-sm font-medium;
+    @apply flex w-full items-center gap-3 px-3 py-2 rounded text-text-secondary hover:text-text-primary
+           hover:bg-surface-2 transition-all duration-150 text-sm font-vt text-lg tracking-wider border-2 border-transparent;
   }
 
   .sidebar-link.active {
-    @apply bg-accent/10 text-accent border border-accent/20;
+    @apply bg-surface-2 text-accent border-border shadow-[inset_4px_0_0_0_#7C5CFF];
   }
 }
+
+/* Card grid entry animation */
+.item-animate{ opacity:0; transform: translateY(8px) scale(0.995); animation: fadeUp .36s cubic-bezier(.2,.9,.3,1) forwards; }
+
+@keyframes fadeUp{
+  to{ opacity:1; transform: translateY(0) scale(1); }
+}
+
+/* image hover reveal */
+.card img{ transition: transform .35s ease, filter .35s ease; transform-origin:center; }
+.card:hover img{ transform: scale(1.03); filter: saturate(1.05) contrast(1.02); }
+.card .image-overlay{ position: absolute; inset:0; pointer-events:none; opacity:0; transition: opacity .28s ease; }
+.card:hover .image-overlay{ opacity:0.12; }
+
+
+
+/* Window overlays and animations */
+.scanlines{ position:absolute; inset:0; pointer-events:none; mix-blend-mode:overlay; opacity:0.06; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 100% 4px; animation: scanline 8s linear infinite; }
+
+@keyframes scanline{ 0%{ background-position: 0 0 } 100%{ background-position: 0 24px } }
+
+.stars{ position:absolute; inset:0; pointer-events:none; }
+.stars::after{ content:''; position:absolute; width:2px; height:2px; background: radial-gradient(circle, rgba(124,92,255,0.9), transparent 70%); left:10%; top:20%; box-shadow: 40px 60px #4CC9F0, 120px 30px #7C5CFF, 200px 120px #9D87FF, 300px 40px #4CC9F0, 420px 200px #7C5CFF; opacity:0.9; animation: twinkle 5s ease-in-out infinite; }
+
+@keyframes twinkle{ 0%,100%{ opacity:0.9 } 50%{ opacity:0.2 } }
+

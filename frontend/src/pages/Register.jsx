@@ -17,14 +17,14 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (form.password.length < 6) {
-      addToast('Password must be at least 6 characters', 'warning')
+      addToast('ERROR: Password must be >= 6 characters', 'warning')
       return
     }
     setLoading(true)
     try {
       const res = await register(form)
       setAuth(res.data.access_token, res.data.user)
-      addToast('Account created! Welcome aboard 🎉', 'success')
+      addToast('ENTITY REGISTERED! Welcome aboard.', 'success')
       navigate('/dashboard')
     } catch (err) {
       console.error('Registration API failed:', err)
@@ -35,42 +35,44 @@ export default function Register() {
   }
 
   return (
-    <div className="w-full space-y-5">
+    <div className="w-full space-y-6">
       <div>
-        <h2 className="text-base font-semibold text-zinc-100">Create account</h2>
-        <p className="text-sm text-zinc-500 mt-0.5">Join Campus L&amp;F today</p>
+        <h2 className="text-xl font-vt text-text-primary uppercase tracking-widest drop-shadow-[1px_1px_0px_#000]">New Entity Registration</h2>
+        <p className="text-sm font-vt text-accent-secondary mt-1 tracking-widest uppercase">&gt; Initialize new user profile</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="label">Full Name</label>
+          <label className="label text-accent drop-shadow-[1px_1px_0px_#000]">&gt; IDENTIFIER (NAME)</label>
           <input id="reg-name" name="name" type="text" required
             value={form.name} onChange={handleChange}
-            placeholder="Full name" className="input" />
+            placeholder="JOHN DOE" className="input uppercase" />
         </div>
         <div>
-          <label className="label">Email</label>
+          <label className="label text-accent drop-shadow-[1px_1px_0px_#000]">&gt; CONTACT_EMAIL</label>
           <input id="reg-email" name="email" type="email" required
             value={form.email} onChange={handleChange}
-            placeholder="Email address" className="input" />
+            placeholder="USER@DOMAIN.COM" className="input uppercase" />
         </div>
         <div>
-          <label className="label">Password</label>
+          <label className="label text-accent drop-shadow-[1px_1px_0px_#000]">&gt; SECURITY_KEY (PASSWORD)</label>
           <input id="reg-password" name="password" type="password" required
             value={form.password} onChange={handleChange}
-            placeholder="Create a password" className="input" />
+            placeholder="********" className="input" />
         </div>
-        <button id="reg-submit" type="submit" disabled={loading} className="btn-primary w-full">
-          {loading ? 'Creating account...' : 'Create account'}
+        <button id="reg-submit" type="submit" disabled={loading} className="btn-primary w-full mt-2 border-accent shadow-pixel-accent text-sm">
+          {loading ? 'INITIALIZING...' : 'REGISTER.EXE'}
         </button>
       </form>
 
-      <p className="text-center text-xs text-zinc-500">
-        Already have an account?{' '}
-        <Link to="/login" className="text-accent hover:text-accent-hover transition-colors">
-          Sign in
-        </Link>
-      </p>
+      <div className="pt-4 border-t-2 border-border mt-4">
+        <p className="text-center text-sm font-vt text-text-secondary tracking-widest uppercase">
+          &gt; Already Registered?{' '}
+          <Link to="/login" className="text-accent-secondary hover:text-white transition-colors drop-shadow-[1px_1px_0px_#000]">
+            PROCEED TO LOGIN
+          </Link>
+        </p>
+      </div>
     </div>
   )
 }
