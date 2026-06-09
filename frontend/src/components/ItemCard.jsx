@@ -35,7 +35,7 @@ export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwne
 
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
-        <h3 className="font-bold text-zinc-100 text-base leading-snug line-clamp-2" style={{fontFamily: 'Inter, system-ui'}}>
+        <h3 className="font-bold text-zinc-100 text-[20px] leading-snug line-clamp-2" style={{fontFamily: 'Inter, system-ui'}}>
           {item.title}
         </h3>
         <StatusBadge status={item.status} />
@@ -43,7 +43,7 @@ export default function ItemCard({ item, type, onClaim, onDelete, onEdit, isOwne
 
       {/* Description */}
       {item.description && (
-        <p className="text-base font-vt text-text-primary tracking-wide leading-relaxed line-clamp-2">{item.description}</p>
+        <p className="text-[20px] font-vt text-text-primary tracking-wide leading-relaxed line-clamp-2">{item.description}</p>
       )}
 
       {/* Meta */}
